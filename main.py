@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, Request, Depends, HTTPException, status
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -56,7 +55,7 @@ async def startup_event():
 cookie_transport = CookieTransport(cookie_max_age=604800)  # 7 days
 
 SECRET = os.getenv("SECRET_KEY", "flynnrebelsniperhankpreston")
-
+#SECRET = os.getenv("SECRET_KEY", "your-secret-key")
 if not SECRET:
     raise ValueError("SECRET_KEY environment variable is not set. Please set it for JWT authentication.")
 
