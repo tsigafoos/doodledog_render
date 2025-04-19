@@ -156,8 +156,8 @@ async def get_projects(user_id: Optional[int] = None):
     await conn.close()
     return [{"name": p["name"], "type": p["type"], "modified_date": p["modified_date"]} for p in projects]
 
-# Root route (Dashboard) - Publicly accessible, explicitly allow HEAD
-@app.route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
+# Root route (Dashboard) - Publicly accessible, revert to @app.get()
+@app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, user: Optional[User] = Depends(current_user_optional)):
     # Fetch projects (user-specific if logged in, otherwise sample projects)
     if user:
@@ -226,4 +226,5 @@ async def logout(request: Request, response: RedirectResponse):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8000))  # Use $PORT from Render.com, default to 8000 for local dev
+    uvicorn.run(app, host="0.0.0.0", port=port)
