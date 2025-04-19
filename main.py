@@ -14,7 +14,6 @@ from sqlalchemy.orm import sessionmaker
 from fastapi_users.db import SQLAlchemyBaseUserTable
 from sqlalchemy import String
 from sqlalchemy.orm import DeclarativeBase
-from passlib.context import CryptContext
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -26,8 +25,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # PostgreSQL configuration
-DATABASE_URL = os.getenv("DATABASE_URL")  # Provided by Render
-print(DATABASE_URL)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable is not set. Please set it to your PostgreSQL database URL.")
+
 if DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
 
@@ -53,6 +54,8 @@ async def startup_event():
 cookie_transport = CookieTransport(cookie_max_age=604800)  # 7 days
 
 SECRET = os.getenv("SECRET_KEY", "flynnrebelsniperhankpreston")
+if not SECRET:
+    raise ValueError("SECRET_KEY environment variable is not set. Please set it for JWT authentication.")
 
 def get_jwt_strategy() -> JWTStrategy:
     return JWTStrategy(secret=SECRET, lifetime_seconds=604800)
