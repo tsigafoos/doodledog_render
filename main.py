@@ -156,8 +156,8 @@ async def get_projects(user_id: Optional[int] = None):
     await conn.close()
     return [{"name": p["name"], "type": p["type"], "modified_date": p["modified_date"]} for p in projects]
 
-# Root route (Dashboard) - Publicly accessible
-@app.get("/", response_class=HTMLResponse)
+# Root route (Dashboard) - Publicly accessible, explicitly allow HEAD
+@app.route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def read_root(request: Request, user: Optional[User] = Depends(current_user_optional)):
     # Fetch projects (user-specific if logged in, otherwise sample projects)
     if user:
