@@ -16,7 +16,7 @@ from sqlalchemy.orm import sessionmaker
 from fastapi_users.db import SQLAlchemyBaseUserTable
 from sqlalchemy import String, Column, Integer
 from sqlalchemy.orm import DeclarativeBase
-from pydantic import BaseModel, EmailStr  # For defining schemas
+from pydantic import BaseModel, EmailStr
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -32,8 +32,13 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set. Please set it to your PostgreSQL database URL.")
 
-if DATABASE_URL.startswith("postgresql://"):
-    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+# Keep the original DATABASE_URL for asyncpg (should be postgresql://)
+ASYNCPG_DATABASE_URL = DATABASE_URL
+
+# Modify the DATABASE_URL for SQLAlchemy (needs postgresql+asyncpg://)
+SQLALCHEMY_DATABASE_URL = DATABASE_URL
+if SQLALCHEMY_DATABASE_URL.startswith("postgresql://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
 
 # SQLAlchemy setup for fastapi-users
 class Base(DeclarativeBase):
@@ -43,7 +48,7 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     id = Column(Integer, primary_key=True)
     username = Column(String, unique=True, nullable=False)
 
-engine = create_async_engine(DATABASE_URL)
+engine = create_async_engine(SQLALCHEMY_DATABASE_URL)
 async_session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 # Create tables on startup
@@ -64,7 +69,7 @@ class UserRead(BaseModel):
     is_verified: bool = False
 
     class Config:
-        from_attributes = True  # For compatibility with SQLAlchemy models
+        from_attributes = True
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -74,8 +79,7 @@ class UserCreate(BaseModel):
 # FastAPI-Users setup
 cookie_transport = CookieTransport(cookie_max_age=604800)  # 7 days
 
-SECRET = os.getenv("SECRET_KEY", "flynnrebelsniperhankpreston")
-
+SECRET = os.getenv("SECRET_KEY", "your-secret-key")
 if not SECRET:
     raise ValueError("SECRET_KEY environment variable is not set. Please set it for JWT authentication.")
 
@@ -98,7 +102,7 @@ current_active_user = fastapi_users.current_user(active=True)
 
 # Initialize projects table using asyncpg
 async def init_projects_db():
-    conn = await asyncpg.connect(DATABASE_URL)
+    conn = await asyncpg.connect(ASYNCPG_DATABASE_URL)  # Use the unmodified URL
     await conn.execute("""
         CREATE TABLE IF NOT EXISTS projects (
             id SERIAL PRIMARY KEY,
@@ -124,7 +128,7 @@ async def init_projects_db():
 
 # Helper function to get projects for a user
 async def get_projects(user_id: Optional[int] = None):
-    conn = await asyncpg.connect(DATABASE_URL)
+    conn = await asyncpg.connect(ASYNCPG_DATABASE_URL)  # Use the unmodified URL
     if user_id:
         projects = await conn.fetch(
             "SELECT name, type, modified_date FROM projects WHERE user_id = $1", user_id
