@@ -1,6 +1,6 @@
-
 #SECRET = os.getenv("SECRET_KEY", "flynnrebelsniperhankpreston")
-from fastapi import FastAPI, Request, Depends, HTTPException, status
+
+from fastapi import FastAPI, Request, Depends, HTTPException, status, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -174,12 +174,17 @@ async def register_page(request: Request):
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
-# Custom login route to handle redirect after successful login
-@app.post("/auth/jwt/login", response_class=RedirectResponse, response_model=None)
-async def login(response: RedirectResponse = Depends(auth_backend.login)):
-    # The auth_backend.login dependency sets the JWT cookie
-    # We just need to redirect to the dashboard
-    return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+# Custom login route to handle form submission and redirect
+@app.post("/auth/jwt/login", response_class=RedirectResponse)
+async def login(username: str = Form(...), password: str = Form(...)):
+    try:
+        # Use fastapi-users to authenticate the user and set the JWT cookie
+        response = await auth_backend.login(get_jwt_strategy(), UserCreate(username=username, password=password, email=f"{username}@example.com"))
+        # Redirect to the dashboard on success
+        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+    except HTTPException as e:
+        # Redirect back to login with an error message if authentication fails
+        return RedirectResponse(url=f"/login?error={e.detail}", status_code=status.HTTP_303_SEE_OTHER)
 
 # Include fastapi-users routers (excluding the default login route)
 app.include_router(
