@@ -1,1 +1,6 @@
 fastapi[all]
+uvicorn
+python-multipart
+passlib[bcrypt]
+fastapi-sessions
+asyncpg

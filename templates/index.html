@@ -16,11 +16,11 @@
             margin: 0;
         }
         #sidebar {
-            transition: width 0.3s, transform 0.3s;
-            min-width: 64px;
-        }
-        #sidebar:not(.collapsed) {
-            width: 200px;
+            transition: transform 0.3s;
+            width: 200px; /* Default width */
+            min-width: 100px; /* Minimum width for resizing */
+            max-width: 250px; /* Maximum width for resizing */
+            position: relative;
         }
         #sidebar.collapsed {
             width: 64px;
@@ -29,8 +29,22 @@
             transition: all 0.3s;
             flex: 1;
         }
+        /* Resizable border */
+        .resize-handle {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 5px;
+            height: 100%;
+            background: transparent;
+            cursor: col-resize;
+            z-index: 10;
+        }
+        .resize-handle:hover {
+            background: #4b5563; /* gray-700 */
+        }
         /* Style sidebar buttons */
-        .nav-item {
+        .nav-item, .folder-item, .project-item {
             display: flex;
             align-items: center;
             gap: 10px;
@@ -43,17 +57,69 @@
             color: white;
             cursor: pointer;
         }
-        .nav-item:hover {
+        .nav-item:hover, .folder-item:hover, .project-item:hover {
             background-color: #4b5563; /* gray-700 */
         }
-        .nav-item i {
+        .nav-item i, .folder-item i, .project-item i {
             flex-shrink: 0;
             font-size: 20px; /* Match previous icon size */
             width: 20px;
             height: 20px;
         }
-        /* Hide labels when collapsed */
-        #sidebar.collapsed .nav-label {
+        /* Collapsible sections */
+        .collapsible-section {
+            display: flex;
+            flex-direction: column;
+        }
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        .collapsible-header:hover {
+            background-color: #4b5563; /* gray-700 */
+        }
+        .collapsible-content {
+            display: block;
+            padding-bottom: 20px;
+        }
+        .collapsible-content.collapsed {
+            display: none;
+        }
+        /* Indent project items */
+        .project-item {
+            padding-left: 36px; /* Indent under folder */
+        }
+        /* Search bar in sidebar */
+        .sidebar-search {
+            padding: 8px 12px;
+        }
+        .sidebar-search input {
+            width: 100%;
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: 1px solid #6b7280; /* gray-500 */
+            background-color: #374151; /* gray-700 */
+            color: white;
+        }
+        .sidebar-search input::placeholder {
+            color: #9ca3af; /* gray-400 */
+        }
+        /* Checkbox styling */
+        .collapse-toggle {
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+        }
+        .collapse-toggle input {
+            cursor: pointer;
+        }
+        /* Hide labels when sidebar is collapsed */
+        #sidebar.collapsed .nav-label, #sidebar.collapsed .folder-label, #sidebar.collapsed .collapsible-label, #sidebar.collapsed .sidebar-search, #sidebar.collapsed .collapse-toggle {
             display: none;
         }
         /* Responsive sidebar */
@@ -61,8 +127,8 @@
             #sidebar {
                 transform: translateX(-100%);
                 position: fixed;
-                top: 64px; /* Below app bar */
-                height: calc(100% - 64px); /* Fit below app bar */
+                top: 60px; /* Adjusted to match new appbar height */
+                height: calc(100% - 60px); /* Fit below app bar */
                 z-index: 20;
                 width: 200px !important; /* Fixed width on mobile */
             }
@@ -71,6 +137,9 @@
             }
             #sidebar.collapsed {
                 width: 200px !important; /* Keep full width for mobile */
+            }
+            .resize-handle {
+                display: none; /* Disable resizing on mobile */
             }
         }
         /* Navigation menu */
@@ -81,7 +150,7 @@
             #nav-menu {
                 transform: translateY(-100%);
                 position: fixed;
-                top: 64px; /* Below app bar */
+                top: 60px; /* Adjusted to match new appbar height */
                 left: 0;
                 right: 0;
                 background-color: #1f2937; /* gray-800 */
@@ -89,6 +158,16 @@
             }
             #nav-menu.open {
                 transform: translateY(0);
+            }
+            /* Ensure submenus are visible on mobile */
+            .dropdown-submenu {
+                position: static !important;
+            }
+            .dropdown-submenu .dropdown-menu {
+                position: static !important;
+                box-shadow: none !important;
+                background-color: #374151; /* gray-700 */
+                margin-left: 1rem;
             }
         }
         /* Carousel and card styles */
@@ -102,12 +181,38 @@
         .card:hover {
             transform: translateY(-5px);
         }
+        /* Submenu styles for desktop */
+        .dropdown-submenu {
+            position: relative;
+        }
+        .dropdown-submenu .dropdown-menu {
+            top: 0;
+            left: 100%;
+            margin-top: -1px;
+            background-color: #1f2937; /* gray-800 */
+        }
+        .dropdown-submenu:hover > .dropdown-menu {
+            display: block;
+        }
+        /* Appbar height and alignment */
+        .appbar {
+            height: 60px; /* Fixed height for appbar */
+        }
+        .appbar-logo {
+            height: 40px; /* Adjusted banner height to fit within 60px appbar */
+        }
+        #desktop-nav {
+            height: 100%;
+            align-items: flex-start; /* Align items to the top */
+        }
     </style>
 </head>
 <body class="flex flex-col h-full bg-gray-100">
     <!-- Navigation Bar -->
-    <nav class="bg-gray-800 text-white p-4 flex justify-between items-center relative z-30">
-        <div class="text-xl font-bold">Doodledog Studio</div>
+    <nav class="appbar bg-gray-800 text-white p-4 flex justify-between items-center relative z-30">
+        <div class="flex items-center">
+            <img src="/static/images/logo_banner_sm.png" alt="Doodledog Studio" class="appbar-logo">
+        </div>
         <!-- Hamburger and Sidebar Toggle for Mobile -->
         <div class="flex items-center space-x-4 md:hidden">
             <!-- Sidebar Toggle (Tools Icon) -->
@@ -121,13 +226,33 @@
         </div>
         <!-- Desktop Navigation -->
         <div id="desktop-nav" class="hidden md:flex space-x-4">
-            <a href="#" class="hover:underline">Dashboard</a>
-            <a href="#" class="hover:underline">Profile</a>
-            <a href="#" class="hover:underline">Settings</a>
-            <a href="#" class="hover:underline">Services</a>
-            <a href="#" class="hover:underline">Contact</a>
-            <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-            <a href="#" class="hover:underline"><i class="bi bi-person-square text-white"></i> Profile</a>
+            <div><a href="#" class="hover:underline py-2">Dashboard</a></div>
+            <!-- Settings Dropdown -->
+            <div class="dropdown">
+                <a href="#" class="hover:underline py-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Settings</a>
+                <ul class="dropdown-menu bg-gray-800 text-white">
+                    <li><a class="dropdown-item text-white hover:bg-gray-700" href="#">Theme</a></li>
+                    <li><a class="dropdown-item text-white hover:bg-gray-700" href="#">Extensions</a></li>
+                    <li><a class="dropdown-item text-white hover:bg-gray-700" href="#">Integration</a></li>
+                </ul>
+            </div>
+            <!-- Services Dropdown -->
+            <div class="dropdown">
+                <a href="#" class="hover:underline py-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Services</a>
+                <ul class="dropdown-menu bg-gray-800 text-white">
+                    <li><a class="dropdown-item text-white hover:bg-gray-700" href="#">Technical Assistance</a></li>
+                    <li><a class="dropdown-item text-white hover:bg-gray-700" href="#">Get Designer</a></li>
+                </ul>
+            </div>
+            <!-- Contact Dropdown -->
+            <div class="dropdown">
+                <a href="#" class="hover:underline py-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Contact</a>
+                <ul class="dropdown-menu bg-gray-800 text-white">
+                    <li><a class="dropdown-item text-white hover:bg-gray-700" href="#">Account Services</a></li>
+                </ul>
+            </div>
+            <div>|</div>
+            <div><a href="#" class="hover:underline py-2"><i class="bi bi-person-square text-white"></i> Profile</a></div>
         </div>
     </nav>
 
@@ -135,10 +260,31 @@
     <div id="nav-menu" class="md:hidden">
         <div class="flex flex-col p-4 space-y-2 bg-gray-800 text-white">
             <a href="#" class="hover:underline py-2">Dashboard</a>
-            <a href="#" class="hover:underline py-2">Settings</a>
-            <a href="#" class="hover:underline py-2">Services</a>
-            <a href="#" class="hover:underline py-2">Contact</a>
-            <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+            <!-- Settings Dropdown for Mobile -->
+            <div class="dropdown dropdown-submenu">
+                <a href="#" class="hover:underline py-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Settings</a>
+                <ul class="dropdown-menu text-white">
+                    <li><a class="dropdown-item text-white hover:bg-gray-700" href="#">Theme</a></li>
+                    <li><a class="dropdown-item text-white hover:bg-gray-700" href="#">Extensions</a></li>
+                    <li><a class="dropdown-item text-white hover:bg-gray-700" href="#">Integration</a></li>
+                </ul>
+            </div>
+            <!-- Services Dropdown for Mobile -->
+            <div class="dropdown dropdown-submenu">
+                <a href="#" class="hover:underline py-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Services</a>
+                <ul class="dropdown-menu text-white">
+                    <li><a class="dropdown-item text-white hover:bg-gray-700" href="#">Technical Assistance</a></li>
+                    <li><a class="dropdown-item text-white hover:bg-gray-700" href="#">Get Designer</a></li>
+                </ul>
+            </div>
+            <!-- Contact Dropdown for Mobile -->
+            <div class="dropdown dropdown-submenu">
+                <a href="#" class="hover:underline py-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Contact</a>
+                <ul class="dropdown-menu text-white">
+                    <li><a class="dropdown-item text-white hover:bg-gray-700" href="#">Account Services</a></li>
+                </ul>
+            </div>
+            <span>     </span>
             <a href="#" class="hover:underline py-2"><i class="bi bi-person-square text-white"></i> Profile</a>
         </div>
     </div>
@@ -146,34 +292,111 @@
     <!-- Main Layout -->
     <div class="flex flex-1 overflow-hidden">
         <!-- Sidebar/Toolbar -->
-        <aside id="sidebar" class="bg-gray-800 text-white w-48 flex-shrink-0 flex flex-col">
+        <aside id="sidebar" class="bg-gray-800 text-white flex-shrink-0 flex flex-col">
             <div class="p-4 flex justify-between items-center md:flex hidden">
-                <span class="sidebar-title font-semibold">Toolbar</span>
+                <span class="sidebar-title font-semibold">Navigation</span>
                 <button id="toggleSidebar" class="text-white focus:outline-none">
                     <i class="bi bi-x-lg text-white w-6 h-6"></i>
                 </button>
             </div>
+            <div class="resize-handle"></div>
             <nav class="flex-1">
-                <button type="button" class="nav-item">
-                    <i class="bi bi-diagram-2 text-white"></i>
-                    <span class="nav-label">Diagram</span>
-                </button>
-                <button type="button" class="nav-item">
-                    <i class="bi bi-bar-chart-steps text-white"></i>
-                    <span class="nav-label">Flowchart</span>
-                </button>
-                <button type="button" class="nav-item">
-                    <i class="bi bi-image text-white"></i>
-                    <span class="nav-label">Drawing</span>
-                </button>
-                <button type="button" class="nav-item">
-                    <i class="bi bi-vector-pen text-white"></i>
-                    <span class="nav-label">Vector</span>
-                </button>
-                <button type="button" class="nav-item">
-                    <i class="bi bi-file-earmark-text text-white"></i>
-                    <span class="nav-label">Page Layout</span>
-                </button>
+                <!-- Modules Section -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header">
+                        <span class="collapsible-label font-semibold">Modules</span>
+                        <i class="bi bi-chevron-down text-white toggle-icon"></i>
+                    </div>
+                    <div class="collapsible-content" id="modules-content">
+                        <button type="button" class="nav-item">
+                            <i class="bi bi-diagram-2 text-white"></i>
+                            <span class="nav-label">Diagram</span>
+                        </button>
+                        <button type="button" class="nav-item">
+                            <i class="bi bi-bar-chart-steps text-white"></i>
+                            <span class="nav-label">Flowchart</span>
+                        </button>
+                        <button type="button" class="nav-item">
+                            <i class="bi bi-image text-white"></i>
+                            <span class="nav-label">Drawing</span>
+                        </button>
+                        <button type="button" class="nav-item">
+                            <i class="bi bi-vector-pen text-white"></i>
+                            <span class="nav-label">Vector</span>
+                        </button>
+                        <button type="button" class="nav-item">
+                            <i class="bi bi-file-earmark-text text-white"></i>
+                            <span class="nav-label">Page Layout</span>
+                        </button>
+                    </div>
+                </div>
+                <div><hr></div>
+                <!-- Folder Explorer Section -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header">
+                        <span class="collapsible-label font-semibold">Folder Explorer</span>
+                        <i class="bi bi-chevron-down text-white toggle-icon"></i>
+                    </div>
+                    <div class="collapsible-content" id="folders-content">
+                        <!-- Search Bar -->
+                        <div class="sidebar-search">
+                            <input type="text" placeholder="Search projects..." />
+                        </div>
+                        <!-- Collapse All/Open All Checkbox -->
+                        <div class="collapse-toggle">
+                            <input type="checkbox" id="toggle-all-folders" checked>
+                            <label for="toggle-all-folders">Collapse All/Open All</label>
+                        </div>
+                        <!-- Folder 1: Design Projects -->
+                        <div class="collapsible-section folder-section">
+                            <div class="collapsible-header folder-header">
+                                <div class="folder-item">
+                                    <i class="bi bi-folder text-white"></i>
+                                    <span class="folder-label">Design Projects</span>
+                                </div>
+                                <i class="bi bi-chevron-down text-white toggle-icon"></i>
+                            </div>
+                            <div class="collapsible-content folder-content">
+                                <button type="button" class="project-item">
+                                    <i class="bi bi-file-earmark text-white"></i>
+                                    <span class="nav-label">Logo Redesign</span>
+                                </button>
+                                <button type="button" class="project-item">
+                                    <i class="bi bi-file-earmark text-white"></i>
+                                    <span class="nav-label">Poster Draft</span>
+                                </button>
+                                <button type="button" class="project-item">
+                                    <i class="bi bi-file-earmark text-white"></i>
+                                    <span class="nav-label">Wireframe Sketch</span>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Folder 2: Work Diagrams -->
+                        <div class="collapsible-section folder-section">
+                            <div class="collapsible-header folder-header">
+                                <div class="folder-item">
+                                    <i class="bi bi-folder text-white"></i>
+                                    <span class="folder-label">Work Diagrams</span>
+                                </div>
+                                <i class="bi bi-chevron-down text-white toggle-icon"></i>
+                            </div>
+                            <div class="collapsible-content folder-content">
+                                <button type="button" class="project-item">
+                                    <i class="bi bi-file-earmark text-white"></i>
+                                    <span class="nav-label">Workflow Map</span>
+                                </button>
+                                <button type="button" class="project-item">
+                                    <i class="bi bi-file-earmark text-white"></i>
+                                    <span class="nav-label">System Architecture</span>
+                                </button>
+                                <button type="button" class="project-item">
+                                    <i class="bi bi-file-earmark text-white"></i>
+                                    <span class="nav-label">Process Flow</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </nav>
         </aside>
 
@@ -185,13 +408,13 @@
                 <div id="projectCarousel" class="carousel slide mb-6" data-bs-ride="carousel">
                     <div class="carousel-inner">
                         <div class="carousel-item active">
-                            <img src="static/images/carousel_diagram.png" class="d-block w-100" alt="Project Showcase 1">
+                            <img src="/static/images/carousel_diagram.png" class="d-block w-100" alt="Project Showcase 1">
                         </div>
                         <div class="carousel-item">
-                            <img src="static/images/carousel_drawing.png" class="d-block w-100" alt="Project Showcase 2">
+                            <img src="/static/images/carousel_drawing.png" class="d-block w-100" alt="Project Showcase 2">
                         </div>
                         <div class="carousel-item">
-                            <img src="static/images/carousel_vector.png" class="d-block w-100" alt="Project Showcase 3">
+                            <img src="/static/images/carousel_vector.png" class="d-block w-100" alt="Project Showcase 3">
                         </div>
                     </div>
                     <button class="carousel-control-prev" type="button" data-bs-target="#projectCarousel" data-bs-slide="prev">
@@ -256,7 +479,6 @@
                     </div>
                 </div>
 
-
                 <!-- Previous Open Projects Table -->
                 <h2>Previous Open Projects</h2>
                 <div class="table-responsive">
@@ -270,29 +492,17 @@
                             </tr>
                         </thead>
                         <tbody>
+                            {% for project in projects %}
                             <tr>
-                                <td>Workflow Process</td>
-                                <td>Flowchart</td>
-                                <td>2025-04-10</td>
+                                <td>{{ project.name }}</td>
+                                <td>{{ project.type }}</td>
+                                <td>{{ project.modified_date }}</td>
                                 <td><button class="btn btn-primary btn-sm">Open</button></td>
                             </tr>
-                            <tr>
-                                <td>Logo Design</td>
-                                <td>Vector</td>
-                                <td>2025-04-05</td>
-                                <td><button class="btn btn-primary btn-sm">Open</button></td>
-                            </tr>
-                            <tr>
-                                <td>Marketing Brochure</td>
-                                <td>Page Layout</td>
-                                <td>2025-03-30</td>
-                                <td><button class="btn btn-primary btn-sm">Open</button></td>
-                            </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
-
-
             </div>
         </main>
     </div>
@@ -306,12 +516,19 @@
         const toggleSidebarMobile = document.getElementById('toggleSidebarMobile');
         const toggleNav = document.getElementById('toggleNav');
         const navMenu = document.getElementById('nav-menu');
+        const resizeHandle = sidebar.querySelector('.resize-handle');
+        const toggleAllFoldersCheckbox = document.getElementById('toggle-all-folders');
 
         // Desktop sidebar collapse/expand
         toggleSidebar.addEventListener('click', () => {
             sidebar.classList.toggle('collapsed');
             const sidebarTitle = sidebar.querySelector('.sidebar-title');
             sidebarTitle.style.display = sidebar.classList.contains('collapsed') ? 'none' : 'block';
+            if (sidebar.classList.contains('collapsed')) {
+                sidebar.style.width = '64px';
+            } else {
+                sidebar.style.width = '200px'; // Default width when expanded
+            }
         });
 
         // Mobile sidebar toggle
@@ -340,13 +557,78 @@
             navMenu.classList.toggle('open');
         });
 
+        // Collapsible section toggle (for both main sections and folders)
+        document.querySelectorAll('.collapsible-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const content = header.nextElementSibling;
+                content.classList.toggle('collapsed');
+                const icon = header.querySelector('.toggle-icon');
+                icon.classList.toggle('bi-chevron-down');
+                icon.classList.toggle('bi-chevron-right');
+                // Update checkbox state if a folder is toggled
+                if (header.classList.contains('folder-header')) {
+                    updateToggleAllCheckbox();
+                }
+            });
+        });
+
         // Sidebar button click handlers
-        document.querySelectorAll('.nav-item').forEach(button => {
+        document.querySelectorAll('.nav-item, .folder-item, .project-item').forEach(button => {
             button.addEventListener('click', () => {
-                console.log(`Clicked: ${button.querySelector('.nav-label')?.textContent || 'Icon'}`);
+                console.log(`Clicked: ${button.querySelector('.nav-label, .folder-label')?.textContent || 'Icon'}`);
                 // Add custom button functionality here
             });
         });
+
+        // Sidebar resizing
+        let isResizing = false;
+        resizeHandle.addEventListener('mousedown', (e) => {
+            if (window.innerWidth >= 768 && !sidebar.classList.contains('collapsed')) { // Only allow resizing on desktop and when not collapsed
+                isResizing = true;
+                document.addEventListener('mousemove', resize);
+                document.addEventListener('mouseup', stopResize);
+            }
+        });
+
+        function resize(e) {
+            if (isResizing) {
+                let newWidth = e.clientX;
+                if (newWidth < 150) newWidth = 150; // Minimum width
+                if (newWidth > 300) newWidth = 300; // Maximum width
+                sidebar.style.width = `${newWidth}px`;
+            }
+        }
+
+        function stopResize() {
+            isResizing = false;
+            document.removeEventListener('mousemove', resize);
+            document.removeEventListener('mouseup', stopResize);
+        }
+
+        // Collapse All/Open All Checkbox functionality
+        toggleAllFoldersCheckbox.addEventListener('change', () => {
+            const isChecked = toggleAllFoldersCheckbox.checked;
+            document.querySelectorAll('.folder-section').forEach(section => {
+                const content = section.querySelector('.folder-content');
+                const icon = section.querySelector('.toggle-icon');
+                if (isChecked) {
+                    content.classList.remove('collapsed');
+                    icon.classList.remove('bi-chevron-right');
+                    icon.classList.add('bi-chevron-down');
+                } else {
+                    content.classList.add('collapsed');
+                    icon.classList.remove('bi-chevron-down');
+                    icon.classList.add('bi-chevron-right');
+                }
+            });
+        });
+
+        // Update checkbox state based on folder states
+        function updateToggleAllCheckbox() {
+            const folderContents = document.querySelectorAll('.folder-content');
+            const allExpanded = Array.from(folderContents).every(content => !content.classList.contains('collapsed'));
+            toggleAllFoldersCheckbox.checked = allExpanded;
+        }
     </script>
 </body>
 </html>
