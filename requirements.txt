@@ -1,8 +1,8 @@
-fastapi[all]
+fastapi
 uvicorn
 python-multipart
 passlib[bcrypt]
 asyncpg
-fastapi-users[sqlalchemy,postgresql]
+fastapi-users[sqlalchemy]  # Remove the postgresql extra
 sqlalchemy
-python-jose[cryptography]  # For JWT support
+python-jose[cryptography]
