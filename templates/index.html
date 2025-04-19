@@ -252,7 +252,19 @@
                 </ul>
             </div>
             <div>|</div>
-            <div><a href="#" class="hover:underline py-2"><i class="bi bi-person-square text-white"></i> Profile</a></div>
+            <!-- Profile/Login Section -->
+            {% if user %}
+                <div class="dropdown">
+                    <a href="#" class="hover:underline py-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-square text-white"></i> {{ user.username }}
+                    </a>
+                    <ul class="dropdown-menu bg-gray-800 text-white">
+                        <li><a class="dropdown-item text-white hover:bg-gray-700" href="/logout">Logout</a></li>
+                    </ul>
+        </div>
+            {% else %}
+                <div><a href="/login" class="hover:underline py-2"><i class="bi bi-person-square text-white"></i> Login</a></div>
+            {% endif %}
         </div>
     </nav>
 
@@ -285,7 +297,19 @@
                 </ul>
             </div>
             <span>     </span>
-            <a href="#" class="hover:underline py-2"><i class="bi bi-person-square text-white"></i> Profile</a>
+            <!-- Profile/Login Section for Mobile -->
+            {% if user %}
+                <div class="dropdown dropdown-submenu">
+                    <a href="#" class="hover:underline py-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-square text-white"></i> {{ user.username }}
+                    </a>
+                    <ul class="dropdown-menu text-white">
+                        <li><a class="dropdown-item text-white hover:bg-gray-700" href="/logout">Logout</a></li>
+                    </ul>
+                </div>
+            {% else %}
+                <a href="/login" class="hover:underline py-2"><i class="bi bi-person-square text-white"></i> Login</a>
+            {% endif %}
         </div>
     </div>
 

@@ -79,7 +79,8 @@ class UserCreate(BaseModel):
 # FastAPI-Users setup
 cookie_transport = CookieTransport(cookie_max_age=604800)  # 7 days
 
-SECRET = os.getenv("SECRET_KEY", "your-secret-key")
+SECRET = os.getenv("SECRET_KEY", "flynnrebelsniperhankpreston")
+
 if not SECRET:
     raise ValueError("SECRET_KEY environment variable is not set. Please set it for JWT authentication.")
 
@@ -97,12 +98,12 @@ fastapi_users = FastAPIUsers[User, int](
     [auth_backend],
 )
 
-# Helper to get the current user
-current_active_user = fastapi_users.current_user(active=True)
+# Helper to get the current user (optional, to allow public access)
+current_user_optional = fastapi_users.current_user(active=True, optional=True)
 
 # Initialize projects table using asyncpg
 async def init_projects_db():
-    conn = await asyncpg.connect(ASYNCPG_DATABASE_URL)  # Use the unmodified URL
+    conn = await asyncpg.connect(ASYNCPG_DATABASE_URL)
     await conn.execute("""
         CREATE TABLE IF NOT EXISTS projects (
             id SERIAL PRIMARY KEY,
@@ -128,7 +129,7 @@ async def init_projects_db():
 
 # Helper function to get projects for a user
 async def get_projects(user_id: Optional[int] = None):
-    conn = await asyncpg.connect(ASYNCPG_DATABASE_URL)  # Use the unmodified URL
+    conn = await asyncpg.connect(ASYNCPG_DATABASE_URL)
     if user_id:
         projects = await conn.fetch(
             "SELECT name, type, modified_date FROM projects WHERE user_id = $1", user_id
@@ -140,13 +141,28 @@ async def get_projects(user_id: Optional[int] = None):
     await conn.close()
     return [{"name": p["name"], "type": p["type"], "modified_date": p["modified_date"]} for p in projects]
 
-# Root route (Dashboard) - Only for authenticated users
+# Root route (Dashboard) - Publicly accessible
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request, user: User = Depends(current_active_user)):
-    projects = await get_projects(user_id=user.id)
-    if not projects:  # Fallback to sample projects
-        projects = await get_projects(user_id=None)
-    return templates.TemplateResponse("index.html", {"request": request, "projects": projects, "username": user.username})
+async def read_root(request: Request):
+    # Get the current user (if logged in)
+    user = await current_user_optional(request)
+    
+    # Fetch projects (user-specific if logged in, otherwise sample projects)
+    if user:
+        projects = await get_projects(user_id=user.id)
+        if not projects:  # Fallback to sample projects if user has none
+            projects = await get_projects(user_id=None)
+    else:
+        projects = await get_projects(user_id=None)  # Sample projects for unauthenticated users
+    
+    return templates.TemplateResponse(
+        "index.html",
+        {
+            "request": request,
+            "projects": projects,
+            "user": user  # Pass the user object (or None) to the template
+        }
+    )
 
 # Registration page
 @app.get("/register", response_class=HTMLResponse)
@@ -158,9 +174,15 @@ async def register_page(request: Request):
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
-# Include fastapi-users routers
+# Custom login route to handle redirect after successful login
+@app.post("/auth/jwt/login", response_class=RedirectResponse)
+async def login(response: RedirectResponse, credentials=Depends(auth_backend.login)):
+    response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+    return response
+
+# Include fastapi-users routers (excluding the default login route)
 app.include_router(
-    fastapi_users.get_auth_router(auth_backend),
+    fastapi_users.get_auth_router(auth_backend, requires_verification=False, include_login=False),
     prefix="/auth/jwt",
     tags=["auth"],
 )
@@ -180,7 +202,7 @@ app.include_router(
 # Logout route
 @app.get("/logout", response_class=RedirectResponse)
 async def logout(request: Request, response: RedirectResponse):
-    response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)  # Redirect to dashboard
     response.delete_cookie(cookie_transport.cookie_name)
     return response
 
