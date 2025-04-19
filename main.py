@@ -93,13 +93,28 @@ auth_backend = AuthenticationBackend(
     get_strategy=get_jwt_strategy,
 )
 
+# Explicitly create the fastapi-users instance with proper dependency injection
+user_db = SQLAlchemyUserDatabase(User, async_session_maker)
 fastapi_users = FastAPIUsers[User, int](
-    lambda: SQLAlchemyUserDatabase(User, async_session_maker),
+    lambda: user_db,
     [auth_backend],
 )
 
 # Helper to get the current user (optional, to allow public access)
-current_user_optional = fastapi_users.current_user(active=True, optional=True)
+# Explicitly pass the strategy to avoid dependency resolution issues
+async def get_current_user(request: Request, strategy: JWTStrategy = Depends(get_jwt_strategy)):
+    token = await cookie_transport.get_login_token(request)
+    if token is None:
+        return None
+    try:
+        user = await strategy.read_token(token, user_db)
+        if user and user.is_active:
+            return user
+        return None
+    except Exception:
+        return None
+
+current_user_optional = get_current_user
 
 # Initialize projects table using asyncpg
 async def init_projects_db():
@@ -143,10 +158,7 @@ async def get_projects(user_id: Optional[int] = None):
 
 # Root route (Dashboard) - Publicly accessible
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
-    # Get the current user (if logged in)
-    user = await current_user_optional(request)
-    
+async def read_root(request: Request, user: Optional[User] = Depends(current_user_optional)):
     # Fetch projects (user-specific if logged in, otherwise sample projects)
     if user:
         projects = await get_projects(user_id=user.id)
