@@ -175,10 +175,11 @@ async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 # Custom login route to handle redirect after successful login
-@app.post("/auth/jwt/login", response_class=RedirectResponse)
-async def login(response: RedirectResponse, credentials=Depends(auth_backend.login)):
-    response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-    return response
+@app.post("/auth/jwt/login", response_class=RedirectResponse, response_model=None)
+async def login(response: RedirectResponse = Depends(auth_backend.login)):
+    # The auth_backend.login dependency sets the JWT cookie
+    # We just need to redirect to the dashboard
+    return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
 # Include fastapi-users routers (excluding the default login route)
 app.include_router(
