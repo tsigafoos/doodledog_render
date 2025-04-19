@@ -12,7 +12,7 @@ from fastapi_users.db import SQLAlchemyUserDatabase
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi_users.db import SQLAlchemyBaseUserTable
-from sqlalchemy import String
+from sqlalchemy import String, Column  # Import Column here
 from sqlalchemy.orm import DeclarativeBase
 
 # Initialize FastAPI app
@@ -37,7 +37,7 @@ class Base(DeclarativeBase):
     pass
 
 class User(SQLAlchemyBaseUserTable[int], Base):
-    username: str = Base.metadata.Column(String, unique=True, nullable=False)
+    username = Column(String, unique=True, nullable=False)  # Use Column directly
 
 engine = create_async_engine(DATABASE_URL)
 async_session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -54,6 +54,7 @@ async def startup_event():
 cookie_transport = CookieTransport(cookie_max_age=604800)  # 7 days
 
 SECRET = os.getenv("SECRET_KEY", "flynnrebelsniperhankpreston")
+
 if not SECRET:
     raise ValueError("SECRET_KEY environment variable is not set. Please set it for JWT authentication.")
 
