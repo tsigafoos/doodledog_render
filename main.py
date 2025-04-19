@@ -1,24 +1,9 @@
-#SECRET = os.getenv("SECRET_KEY", "flynnrebelsniperhankpreston")
-
-from fastapi import FastAPI, Request, Depends, HTTPException, status, Form
+from fastapi import FastAPI
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-import asyncpg
-from typing import Optional
-import os
-from fastapi_users import FastAPIUsers, models
-from fastapi_users.authentication import CookieTransport, AuthenticationBackend
-from fastapi_users.authentication import JWTStrategy
-from fastapi_users.db import SQLAlchemyUserDatabase
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
-from fastapi_users.db import SQLAlchemyBaseUserTable
-from sqlalchemy import String, Column, Integer
-from sqlalchemy.orm import DeclarativeBase
-from pydantic import BaseModel, EmailStr
+from fastapi.requests import Request
 
-# Initialize FastAPI app
 app = FastAPI()
 
 # Mount static files directory for CSS/JS/images
@@ -27,204 +12,18 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Set up Jinja2 templates
 templates = Jinja2Templates(directory="templates")
 
-# PostgreSQL configuration
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable is not set. Please set it to your PostgreSQL database URL.")
+# Sample project data (this could come from a database in a real application)
+projects = [
+    {"name": "Sample Workflow Process", "type": "Flowchart", "modified_date": "2025-04-10 17:30:25"},
+    {"name": "Sample Logo Design", "type": "Vector", "modified_date": "2025-04-05 09:45:32"},
+    {"name": "Sample Marketing Brochure", "type": "Page Layout", "modified_date": "2025-03-30 12:18:45"}
+]
 
-# Keep the original DATABASE_URL for asyncpg (should be postgresql://)
-ASYNCPG_DATABASE_URL = DATABASE_URL
-
-# Modify the DATABASE_URL for SQLAlchemy (needs postgresql+asyncpg://)
-SQLALCHEMY_DATABASE_URL = DATABASE_URL
-if SQLALCHEMY_DATABASE_URL.startswith("postgresql://"):
-    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
-
-# SQLAlchemy setup for fastapi-users
-class Base(DeclarativeBase):
-    pass
-
-class User(SQLAlchemyBaseUserTable[int], Base):
-    id = Column(Integer, primary_key=True)
-    username = Column(String, unique=True, nullable=False)
-
-engine = create_async_engine(SQLALCHEMY_DATABASE_URL)
-async_session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-# Create tables on startup
-@app.on_event("startup")
-async def startup_event():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    # Initialize projects table using asyncpg
-    await init_projects_db()
-
-# Define Pydantic schemas for fastapi-users
-class UserRead(BaseModel):
-    id: int
-    email: EmailStr
-    username: str
-    is_active: bool = True
-    is_superuser: bool = False
-    is_verified: bool = False
-
-    class Config:
-        from_attributes = True
-
-class UserCreate(BaseModel):
-    email: EmailStr
-    username: str
-    password: str
-
-# FastAPI-Users setup
-cookie_transport = CookieTransport(cookie_max_age=604800)  # 7 days
-
-SECRET = os.getenv("SECRET_KEY", "flynnrebelsniperhankpreston")
-
-if not SECRET:
-    raise ValueError("SECRET_KEY environment variable is not set. Please set it for JWT authentication.")
-
-def get_jwt_strategy() -> JWTStrategy:
-    return JWTStrategy(secret=SECRET, lifetime_seconds=604800)
-
-auth_backend = AuthenticationBackend(
-    name="jwt",
-    transport=cookie_transport,
-    get_strategy=get_jwt_strategy,
-)
-
-# Explicitly create the fastapi-users instance with proper dependency injection
-user_db = SQLAlchemyUserDatabase(User, async_session_maker)
-fastapi_users = FastAPIUsers[User, int](
-    lambda: user_db,
-    [auth_backend],
-)
-
-# Helper to get the current user (optional, to allow public access)
-# Explicitly pass the strategy to avoid dependency resolution issues
-async def get_current_user(request: Request, strategy: JWTStrategy = Depends(get_jwt_strategy)):
-    token = await cookie_transport.get_login_token(request)
-    if token is None:
-        return None
-    try:
-        user = await strategy.read_token(token, user_db)
-        if user and user.is_active:
-            return user
-        return None
-    except Exception:
-        return None
-
-current_user_optional = get_current_user
-
-# Initialize projects table using asyncpg
-async def init_projects_db():
-    conn = await asyncpg.connect(ASYNCPG_DATABASE_URL)
-    await conn.execute("""
-        CREATE TABLE IF NOT EXISTS projects (
-            id SERIAL PRIMARY KEY,
-            name TEXT NOT NULL,
-            type TEXT NOT NULL,
-            modified_date TEXT NOT NULL,
-            user_id INTEGER
-        )
-    """)
-    count = await conn.fetchval("SELECT COUNT(*) FROM projects")
-    if count == 0:
-        sample_projects = [
-            ("Sample Workflow Process", "Flowchart", "2025-04-10"),
-            ("Sample Logo Design", "Vector", "2025-04-05"),
-            ("Sample Marketing Brochure", "Page Layout", "2025-03-30")
-        ]
-        for name, project_type, modified_date in sample_projects:
-            await conn.execute(
-                "INSERT INTO projects (name, type, modified_date, user_id) VALUES ($1, $2, $3, NULL)",
-                name, project_type, modified_date
-            )
-    await conn.close()
-
-# Helper function to get projects for a user
-async def get_projects(user_id: Optional[int] = None):
-    conn = await asyncpg.connect(ASYNCPG_DATABASE_URL)
-    if user_id:
-        projects = await conn.fetch(
-            "SELECT name, type, modified_date FROM projects WHERE user_id = $1", user_id
-        )
-    else:
-        projects = await conn.fetch(
-            "SELECT name, type, modified_date FROM projects WHERE user_id IS NULL"
-        )
-    await conn.close()
-    return [{"name": p["name"], "type": p["type"], "modified_date": p["modified_date"]} for p in projects]
-
-# Root route (Dashboard) - Publicly accessible, revert to @app.get()
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request, user: Optional[User] = Depends(current_user_optional)):
-    # Fetch projects (user-specific if logged in, otherwise sample projects)
-    if user:
-        projects = await get_projects(user_id=user.id)
-        if not projects:  # Fallback to sample projects if user has none
-            projects = await get_projects(user_id=None)
-    else:
-        projects = await get_projects(user_id=None)  # Sample projects for unauthenticated users
-    
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "projects": projects,
-            "user": user  # Pass the user object (or None) to the template
-        }
-    )
-
-# Registration page
-@app.get("/register", response_class=HTMLResponse)
-async def register_page(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
-
-# Login page
-@app.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
-
-# Custom login route to handle form submission and redirect
-@app.post("/auth/jwt/login", response_class=RedirectResponse)
-async def login(username: str = Form(...), password: str = Form(...)):
-    try:
-        # Use fastapi-users to authenticate the user and set the JWT cookie
-        response = await auth_backend.login(get_jwt_strategy(), UserCreate(username=username, password=password, email=f"{username}@example.com"))
-        # Redirect to the dashboard on success
-        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-    except HTTPException as e:
-        # Redirect back to login with an error message if authentication fails
-        return RedirectResponse(url=f"/login?error={e.detail}", status_code=status.HTTP_303_SEE_OTHER)
-
-# Include fastapi-users routers
-app.include_router(
-    fastapi_users.get_auth_router(auth_backend, requires_verification=False),
-    prefix="/auth/jwt",
-    tags=["auth"],
-)
-
-app.include_router(
-    fastapi_users.get_register_router(UserRead, UserCreate),
-    prefix="/auth",
-    tags=["auth"],
-)
-
-app.include_router(
-    fastapi_users.get_users_router(UserRead, UserCreate),
-    prefix="/users",
-    tags=["users"],
-)
-
-# Logout route
-@app.get("/logout", response_class=RedirectResponse)
-async def logout(request: Request, response: RedirectResponse):
-    response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)  # Redirect to dashboard
-    response.delete_cookie(cookie_transport.cookie_name)
-    return response
+async def read_root(request: Request):
+    # Pass the projects data to the template
+    return templates.TemplateResponse("index.html", {"request": request, "projects": projects})
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))  # Use $PORT from Render.com, default to 8000 for local dev
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

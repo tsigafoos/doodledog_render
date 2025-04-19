@@ -211,7 +211,7 @@
     <!-- Navigation Bar -->
     <nav class="appbar bg-gray-800 text-white p-4 flex justify-between items-center relative z-30">
         <div class="flex items-center">
-            <img src="/static/images/logo_banner_sm.png" alt="Doodledog Studio" class="appbar-logo">
+            <img src="static/images/logo_banner_sm.png" alt="Doodledog Studio" class="appbar-logo">
         </div>
         <!-- Hamburger and Sidebar Toggle for Mobile -->
         <div class="flex items-center space-x-4 md:hidden">
@@ -252,19 +252,7 @@
                 </ul>
             </div>
             <div>|</div>
-            <!-- Profile/Login Section -->
-            {% if user %}
-                <div class="dropdown">
-                    <a href="#" class="hover:underline py-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-square text-white"></i> {{ user.username }}
-                    </a>
-                    <ul class="dropdown-menu bg-gray-800 text-white">
-                        <li><a class="dropdown-item text-white hover:bg-gray-700" href="/logout">Logout</a></li>
-                    </ul>
-        </div>
-            {% else %}
-                <div><a href="/login" class="hover:underline py-2"><i class="bi bi-person-square text-white"></i> Login</a></div>
-            {% endif %}
+            <div><a href="#" class="hover:underline py-2"><i class="bi bi-person-square text-white"></i> Profile</a></div>
         </div>
     </nav>
 
@@ -297,19 +285,7 @@
                 </ul>
             </div>
             <span>     </span>
-            <!-- Profile/Login Section for Mobile -->
-            {% if user %}
-                <div class="dropdown dropdown-submenu">
-                    <a href="#" class="hover:underline py-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-square text-white"></i> {{ user.username }}
-                    </a>
-                    <ul class="dropdown-menu text-white">
-                        <li><a class="dropdown-item text-white hover:bg-gray-700" href="/logout">Logout</a></li>
-                    </ul>
-                </div>
-            {% else %}
-                <a href="/login" class="hover:underline py-2"><i class="bi bi-person-square text-white"></i> Login</a>
-            {% endif %}
+            <a href="#" class="hover:underline py-2"><i class="bi bi-person-square text-white"></i> Profile</a>
         </div>
     </div>
 
@@ -432,13 +408,13 @@
                 <div id="projectCarousel" class="carousel slide mb-6" data-bs-ride="carousel">
                     <div class="carousel-inner">
                         <div class="carousel-item active">
-                            <img src="/static/images/carousel_diagram.png" class="d-block w-100" alt="Project Showcase 1">
+                            <img src="static/images/carousel_diagram.png" class="d-block w-100" alt="Project Showcase 1">
                         </div>
                         <div class="carousel-item">
-                            <img src="/static/images/carousel_drawing.png" class="d-block w-100" alt="Project Showcase 2">
+                            <img src="static/images/carousel_drawing.png" class="d-block w-100" alt="Project Showcase 2">
                         </div>
                         <div class="carousel-item">
-                            <img src="/static/images/carousel_vector.png" class="d-block w-100" alt="Project Showcase 3">
+                            <img src="static/images/carousel_vector.png" class="d-block w-100" alt="Project Showcase 3">
                         </div>
                     </div>
                     <button class="carousel-control-prev" type="button" data-bs-target="#projectCarousel" data-bs-slide="prev">
@@ -516,14 +492,24 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for project in projects %}
                             <tr>
-                                <td>{{ project.name }}</td>
-                                <td>{{ project.type }}</td>
-                                <td>{{ project.modified_date }}</td>
+                                <td>Workflow Process</td>
+                                <td>Flowchart</td>
+                                <td>2025-04-10</td>
                                 <td><button class="btn btn-primary btn-sm">Open</button></td>
                             </tr>
-                            {% endfor %}
+                            <tr>
+                                <td>Logo Design</td>
+                                <td>Vector</td>
+                                <td>2025-04-05</td>
+                                <td><button class="btn btn-primary btn-sm">Open</button></td>
+                            </tr>
+                            <tr>
+                                <td>Marketing Brochure</td>
+                                <td>Page Layout</td>
+                                <td>2025-03-30</td>
+                                <td><button class="btn btn-primary btn-sm">Open</button></td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
