@@ -27,6 +27,7 @@ templates = Jinja2Templates(directory="templates")
 
 # PostgreSQL configuration
 DATABASE_URL = os.getenv("DATABASE_URL")  # Provided by Render
+print(DATABASE_URL)
 if DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
 
@@ -51,7 +52,7 @@ async def startup_event():
 # FastAPI-Users setup
 cookie_transport = CookieTransport(cookie_max_age=604800)  # 7 days
 
-SECRET = os.getenv("SECRET_KEY", "your-secret-key")
+SECRET = os.getenv("SECRET_KEY", "flynnrebelsniperhankpreston")
 
 def get_jwt_strategy() -> JWTStrategy:
     return JWTStrategy(secret=SECRET, lifetime_seconds=604800)
