@@ -3,6 +3,7 @@ uvicorn
 python-multipart
 passlib[bcrypt]
 asyncpg
-fastapi-users[sqlalchemy]  # Remove the postgresql extra
+fastapi-users[sqlalchemy]
 sqlalchemy
 python-jose[cryptography]
+jinja2  # Add this line
