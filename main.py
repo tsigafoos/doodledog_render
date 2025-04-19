@@ -186,9 +186,9 @@ async def login(username: str = Form(...), password: str = Form(...)):
         # Redirect back to login with an error message if authentication fails
         return RedirectResponse(url=f"/login?error={e.detail}", status_code=status.HTTP_303_SEE_OTHER)
 
-# Include fastapi-users routers (excluding the default login route)
+# Include fastapi-users routers
 app.include_router(
-    fastapi_users.get_auth_router(auth_backend, requires_verification=False, include_login=False),
+    fastapi_users.get_auth_router(auth_backend, requires_verification=False),
     prefix="/auth/jwt",
     tags=["auth"],
 )
