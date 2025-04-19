@@ -1,3 +1,5 @@
+
+#SECRET = os.getenv("SECRET_KEY", "flynnrebelsniperhankpreston")
 from fastapi import FastAPI, Request, Depends, HTTPException, status
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -12,8 +14,9 @@ from fastapi_users.db import SQLAlchemyUserDatabase
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi_users.db import SQLAlchemyBaseUserTable
-from sqlalchemy import String, Column, Integer  # Add Integer for the id column
+from sqlalchemy import String, Column, Integer
 from sqlalchemy.orm import DeclarativeBase
+from pydantic import BaseModel, EmailStr  # For defining schemas
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -37,8 +40,8 @@ class Base(DeclarativeBase):
     pass
 
 class User(SQLAlchemyBaseUserTable[int], Base):
-    id = Column(Integer, primary_key=True)  # Explicitly define the id column as primary key
-    username = Column(String, unique=True, nullable=False)  # Custom username field
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True, nullable=False)
 
 engine = create_async_engine(DATABASE_URL)
 async_session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -51,11 +54,28 @@ async def startup_event():
     # Initialize projects table using asyncpg
     await init_projects_db()
 
+# Define Pydantic schemas for fastapi-users
+class UserRead(BaseModel):
+    id: int
+    email: EmailStr
+    username: str
+    is_active: bool = True
+    is_superuser: bool = False
+    is_verified: bool = False
+
+    class Config:
+        from_attributes = True  # For compatibility with SQLAlchemy models
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    username: str
+    password: str
+
 # FastAPI-Users setup
 cookie_transport = CookieTransport(cookie_max_age=604800)  # 7 days
 
 SECRET = os.getenv("SECRET_KEY", "flynnrebelsniperhankpreston")
-#SECRET = os.getenv("SECRET_KEY", "your-secret-key")
+
 if not SECRET:
     raise ValueError("SECRET_KEY environment variable is not set. Please set it for JWT authentication.")
 
@@ -142,13 +162,13 @@ app.include_router(
 )
 
 app.include_router(
-    fastapi_users.get_register_router(),
+    fastapi_users.get_register_router(UserRead, UserCreate),
     prefix="/auth",
     tags=["auth"],
 )
 
 app.include_router(
-    fastapi_users.get_users_router(),
+    fastapi_users.get_users_router(UserRead, UserCreate),
     prefix="/users",
     tags=["users"],
 )
