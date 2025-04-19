@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, Request, Depends, HTTPException, status
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -12,7 +13,7 @@ from fastapi_users.db import SQLAlchemyUserDatabase
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi_users.db import SQLAlchemyBaseUserTable
-from sqlalchemy import String, Column  # Import Column here
+from sqlalchemy import String, Column, Integer  # Add Integer for the id column
 from sqlalchemy.orm import DeclarativeBase
 
 # Initialize FastAPI app
@@ -37,7 +38,8 @@ class Base(DeclarativeBase):
     pass
 
 class User(SQLAlchemyBaseUserTable[int], Base):
-    username = Column(String, unique=True, nullable=False)  # Use Column directly
+    id = Column(Integer, primary_key=True)  # Explicitly define the id column as primary key
+    username = Column(String, unique=True, nullable=False)  # Custom username field
 
 engine = create_async_engine(DATABASE_URL)
 async_session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
