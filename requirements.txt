@@ -2,5 +2,7 @@ fastapi[all]
 uvicorn
 python-multipart
 passlib[bcrypt]
-fastapi-sessions
 asyncpg
+fastapi-users[sqlalchemy,postgresql]
+sqlalchemy
+python-jose[cryptography]  # For JWT support
