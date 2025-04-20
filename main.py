@@ -37,7 +37,7 @@ def get_current_user(request: Request, session: SessionDep) -> Optional[dict]:
     if username:
         user = session.exec(select(User).where(User.username == username)).first()
         if user:
-            return {"username": users.username}
+            return {"username": user.username}
     return None
 
 @app.get("/", response_class=HTMLResponse)
