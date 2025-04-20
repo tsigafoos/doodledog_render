@@ -81,7 +81,7 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 # Dependency to get the current user from JWT
-async def get_current_user(token: str = Depends(oauth2_scheme), session: SessionDep):
+async def get_current_user(session: SessionDep, token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
