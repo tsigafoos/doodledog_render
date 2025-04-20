@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import Depends
 
 # Get the database URL from environment variables (set by Render)
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/doodledog_db")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://twogooddogs:lTKCoPFz0bDhbI0OlKmCgIot0FjhMDNK@dpg-d01sbhje5dus73bhbpqg-a/doodledog_db")
 
 # Create the database engine
 connect_args = {}
