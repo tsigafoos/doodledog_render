@@ -1,9 +1,5 @@
 fastapi
 uvicorn
+jinja2
 python-multipart
 passlib[bcrypt]
-asyncpg
-fastapi-users[sqlalchemy]
-sqlalchemy
-python-jose[cryptography]
-jinja2  # Add this line
