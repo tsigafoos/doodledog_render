@@ -9,6 +9,7 @@
     <p class="text-red-500 mb-4 text-center">{{ error }}</p>
     {% endif %}
     <form action="/register" method="POST" class="bg-white p-6 rounded-lg shadow-md">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <div class="mb-4">
             <label for="username" class="block text-sm font-medium text-gray-700">Username:</label>
             <input type="text" id="username" name="username" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" required>

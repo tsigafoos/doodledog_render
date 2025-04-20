@@ -2,7 +2,11 @@ import os
 from sqlmodel import SQLModel, create_engine, Session
 from typing import Annotated
 from fastapi import Depends
+from dotenv import load_dotenv
 
+load_dotenv()
+# Get the secret URL from environment variables
+SECRET_KEY = os.getenv("SECRET_KEY")
 # Get the database URL from environment variables (set by Render)
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://twogooddogs:lTKCoPFz0bDhbI0OlKmCgIot0FjhMDNK@dpg-d01sbhje5dus73bhbpqg-a/doodledog_db")
 
