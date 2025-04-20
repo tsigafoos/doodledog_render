@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from passlib.context import CryptContext
 from typing import Optional, Annotated
 from sqlmodel import select, Session
-from database import create_db_and_tables, SessionDep
+from database import create_db_and_tables, SessionDep, get_session  # Added get_session
 from models import User
 from pydantic import BaseModel, EmailStr, validator
 from jose import JWTError, jwt

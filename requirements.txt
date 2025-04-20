@@ -5,9 +5,8 @@ python-multipart==0.0.20
 passlib[bcrypt]==1.7.4
 sqlmodel==0.0.16
 psycopg2-binary==2.9.9
-python-jose[cryptography]
-pydantic==2.7.0
-slowapi
-python-dotenv
+python-jose[cryptography] 
+pydantic[email] 
+slowapi 
+python-dotenv 
 alembic
-email-validator==2.2.0
