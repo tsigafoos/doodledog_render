@@ -60,7 +60,7 @@ async def login_page(request: Request, user: Optional[dict] = Depends(get_curren
     return templates.TemplateResponse("login.html", {"request": request})
 
 @app.post("/login", response_class=HTMLResponse)
-async def login(request: Request, username: str = Form(...), password: str = Form(...), session: SessionDep):
+async def login(request: Request, session: SessionDep, username: str = Form(...), password: str = Form(...)):
     user = session.exec(select(User).where(User.username == username)).first()
     if not user or not pwd_context.verify(password, user.password):
         return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid username or password"})
@@ -77,7 +77,7 @@ async def register_page(request: Request, user: Optional[dict] = Depends(get_cur
     return templates.TemplateResponse("register.html", {"request": request})
 
 @app.post("/register", response_class=HTMLResponse)
-async def register(request: Request, username: str = Form(...), email: str = Form(...), password: str = Form(...), session: SessionDep):
+async def register(request: Request, session: SessionDep, username: str = Form(...), email: str = Form(...), password: str = Form(...)):
     # Check if username or email already exists
     existing_user = session.exec(select(User).where(User.username == username)).first()
     if existing_user:
@@ -108,4 +108,3 @@ async def logout():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-    
