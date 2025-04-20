@@ -20,11 +20,11 @@ projects = [
 ]
 
 @app.get("/", response_class=HTMLResponse)
+@app.get("/home", response_class=HTMLResponse)
 async def read_root(request: Request):
-    # Pass the projects data to the template
-    return templates.TemplateResponse("index.html", {"request": request, "projects": projects})
+    return templates.TemplateResponse("index.html", {"request": request})
 
-@app.get("/dashboard/", response_class=HTMLResponse)
+@app.get("/dashboard", response_class=HTMLResponse)
 async def read_root(request: Request):
     # Pass the projects data to the template
     return templates.TemplateResponse("dashboard.html", {"request": request, "projects": projects})

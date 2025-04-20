@@ -211,7 +211,7 @@
     <!-- Navigation Bar -->
     <nav class="appbar bg-gray-800 text-white p-4 flex justify-between items-center relative z-30">
         <div class="flex items-center">
-            <img src="static/images/logo_banner_sm.png" alt="Doodledog Studio" class="appbar-logo">
+            <a href="/home"><img src="static/images/logo_banner_sm.png" alt="Doodledog Studio" class="appbar-logo"></a>
         </div>
         <!-- Hamburger and Sidebar Toggle for Mobile -->
         <div class="flex items-center space-x-4 md:hidden">
@@ -226,7 +226,7 @@
         </div>
         <!-- Desktop Navigation -->
         <div id="desktop-nav" class="hidden md:flex space-x-4">
-            <div><a href="#" class="hover:underline py-2">Dashboard</a></div>
+            <div><a href="/dashboard" class="hover:underline py-2">Dashboard</a></div>
             <!-- Settings Dropdown -->
             <div class="dropdown">
                 <a href="#" class="hover:underline py-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Settings</a>
@@ -259,8 +259,8 @@
     <!-- Mobile Navigation Menu -->
     <div id="nav-menu" class="md:hidden">
         <div class="flex flex-col p-4 space-y-2 bg-gray-800 text-white">
-            <a href="/dashboard/" class="hover:underline py-2">Dashboard</a>
-            <!-- Settings Dropdown for Mobile -->
+            <div><a href="/dashboard" class="hover:underline py-2">Dashboard</a></div>
+             <!-- Settings Dropdown for Mobile -->
             <div class="dropdown dropdown-submenu">
                 <a href="#" class="hover:underline py-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Settings</a>
                 <ul class="dropdown-menu text-white">
