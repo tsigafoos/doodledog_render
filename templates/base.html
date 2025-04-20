@@ -113,13 +113,60 @@
     </main>
 
     <script>
+        // Mobile Navigation Toggle
         const toggleNav = document.getElementById('toggleNav');
         const navMenu = document.getElementById('nav-menu');
-
+    
         if (toggleNav && navMenu) {
             toggleNav.addEventListener('click', () => {
                 navMenu.classList.toggle('open');
             });
+        }
+    
+        // Carousel Functionality
+        const carousel = document.getElementById('carousel');
+        const prevSlide = document.getElementById('prevSlide');
+        const nextSlide = document.getElementById('nextSlide');
+        const indicators = document.querySelectorAll('.carousel-indicator');
+    
+        if (carousel && prevSlide && nextSlide && indicators) {
+            let currentSlide = 0;
+            const slides = carousel.children;
+            const totalSlides = slides.length;
+    
+            function updateCarousel() {
+                carousel.style.transform = `translateX(-${currentSlide * 100}%)`;
+                indicators.forEach((indicator, index) => {
+                    indicator.classList.toggle('bg-white', index === currentSlide);
+                    indicator.classList.toggle('bg-gray-400', index !== currentSlide);
+                });
+            }
+    
+            prevSlide.addEventListener('click', () => {
+                currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+                updateCarousel();
+            });
+    
+            nextSlide.addEventListener('click', () => {
+                currentSlide = (currentSlide + 1) % totalSlides;
+                updateCarousel();
+            });
+    
+            indicators.forEach((indicator, index) => {
+                indicator.addEventListener('click', () => {
+                    currentSlide = index;
+                    updateCarousel();
+                });
+            });
+    
+            // Auto-slide every 5 seconds
+            setInterval(() => {
+                currentSlide = (currentSlide + 1) % totalSlides;
+                updateCarousel();
+            }, 5000);
+    
+            // Initialize the first slide
+            updateCarousel();
         }
     </script>
 </body>
