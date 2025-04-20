@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from passlib.context import CryptContext
 from typing import Optional, Annotated
 from sqlmodel import select, Session
-from database import create_db_and_tables, SessionDep, get_session  # Added get_session
+from database import create_db_and_tables, SessionDep, get_session
 from models import User
 from pydantic import BaseModel, EmailStr, validator
 from jose import JWTError, jwt
@@ -81,7 +81,7 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 # Dependency to get the current user from JWT
-async def get_current_user(token: str = Depends(oauth2_scheme), session: SessionDep = Depends(get_session)):
+async def get_current_user(token: str = Depends(oauth2_scheme), session: SessionDep):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -148,6 +148,11 @@ async def login(request: Request, session: SessionDep, username: str = Form(...)
     if not user or not pwd_context.verify(user_input.password, user.password):
         return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid username or password", "csrf_token": generate_csrf_token()})
     
+    # Update last_login
+    user.last_login = datetime.utcnow()
+    session.add(user)
+    session.commit()
+
     # Create JWT token
     access_token = create_access_token(data={"sub": user.username})
     
@@ -196,7 +201,7 @@ async def register(request: Request, session: SessionDep, username: str = Form(.
     
     # Hash the password and store the user
     hashed_password = pwd_context.hash(user_input.password)
-    new_user = User(username=user_input.username, email=user_input.email, password=hashed_password)
+    new_user = User(username=user_input.username, email=user_input.email, password=hashed_password, created_at=datetime.utcnow())
     session.add(new_user)
     session.commit()
     session.refresh(new_user)
