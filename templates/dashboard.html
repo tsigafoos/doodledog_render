@@ -259,7 +259,7 @@
     <!-- Mobile Navigation Menu -->
     <div id="nav-menu" class="md:hidden">
         <div class="flex flex-col p-4 space-y-2 bg-gray-800 text-white">
-            <a href="/dashboard/" class="hover:underline py-2">Dashboard</a>
+            <a href="#" class="hover:underline py-2">Dashboard</a>
             <!-- Settings Dropdown for Mobile -->
             <div class="dropdown dropdown-submenu">
                 <a href="#" class="hover:underline py-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Settings</a>
@@ -291,10 +291,119 @@
 
     <!-- Main Layout -->
     <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar/Toolbar -->
+        <aside id="sidebar" class="bg-gray-800 text-white flex-shrink-0 flex flex-col">
+            <div class="p-4 flex justify-between items-center md:flex hidden">
+                <span class="sidebar-title font-semibold">Navigation</span>
+                <button id="toggleSidebar" class="text-white focus:outline-none">
+                    <i class="bi bi-x-lg text-white w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="resize-handle"></div>
+            <nav class="flex-1">
+                <!-- Modules Section -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header">
+                        <span class="collapsible-label font-semibold">Modules</span>
+                        <i class="bi bi-chevron-down text-white toggle-icon"></i>
+                    </div>
+                    <div class="collapsible-content" id="modules-content">
+                        <button type="button" class="nav-item">
+                            <i class="bi bi-diagram-2 text-white"></i>
+                            <span class="nav-label">Diagram</span>
+                        </button>
+                        <button type="button" class="nav-item">
+                            <i class="bi bi-bar-chart-steps text-white"></i>
+                            <span class="nav-label">Flowchart</span>
+                        </button>
+                        <button type="button" class="nav-item">
+                            <i class="bi bi-image text-white"></i>
+                            <span class="nav-label">Drawing</span>
+                        </button>
+                        <button type="button" class="nav-item">
+                            <i class="bi bi-vector-pen text-white"></i>
+                            <span class="nav-label">Vector</span>
+                        </button>
+                        <button type="button" class="nav-item">
+                            <i class="bi bi-file-earmark-text text-white"></i>
+                            <span class="nav-label">Page Layout</span>
+                        </button>
+                    </div>
+                </div>
+                <div><hr></div>
+                <!-- Folder Explorer Section -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header">
+                        <span class="collapsible-label font-semibold">Folder Explorer</span>
+                        <i class="bi bi-chevron-down text-white toggle-icon"></i>
+                    </div>
+                    <div class="collapsible-content" id="folders-content">
+                        <!-- Search Bar -->
+                        <div class="sidebar-search">
+                            <input type="text" placeholder="Search projects..." />
+                        </div>
+                        <!-- Collapse All/Open All Checkbox -->
+                        <div class="collapse-toggle">
+                            <input type="checkbox" id="toggle-all-folders" checked>
+                            <label for="toggle-all-folders">Collapse All/Open All</label>
+                        </div>
+                        <!-- Folder 1: Design Projects -->
+                        <div class="collapsible-section folder-section">
+                            <div class="collapsible-header folder-header">
+                                <div class="folder-item">
+                                    <i class="bi bi-folder text-white"></i>
+                                    <span class="folder-label">Design Projects</span>
+                                </div>
+                                <i class="bi bi-chevron-down text-white toggle-icon"></i>
+                            </div>
+                            <div class="collapsible-content folder-content">
+                                <button type="button" class="project-item">
+                                    <i class="bi bi-file-earmark text-white"></i>
+                                    <span class="nav-label">Logo Redesign</span>
+                                </button>
+                                <button type="button" class="project-item">
+                                    <i class="bi bi-file-earmark text-white"></i>
+                                    <span class="nav-label">Poster Draft</span>
+                                </button>
+                                <button type="button" class="project-item">
+                                    <i class="bi bi-file-earmark text-white"></i>
+                                    <span class="nav-label">Wireframe Sketch</span>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Folder 2: Work Diagrams -->
+                        <div class="collapsible-section folder-section">
+                            <div class="collapsible-header folder-header">
+                                <div class="folder-item">
+                                    <i class="bi bi-folder text-white"></i>
+                                    <span class="folder-label">Work Diagrams</span>
+                                </div>
+                                <i class="bi bi-chevron-down text-white toggle-icon"></i>
+                            </div>
+                            <div class="collapsible-content folder-content">
+                                <button type="button" class="project-item">
+                                    <i class="bi bi-file-earmark text-white"></i>
+                                    <span class="nav-label">Workflow Map</span>
+                                </button>
+                                <button type="button" class="project-item">
+                                    <i class="bi bi-file-earmark text-white"></i>
+                                    <span class="nav-label">System Architecture</span>
+                                </button>
+                                <button type="button" class="project-item">
+                                    <i class="bi bi-file-earmark text-white"></i>
+                                    <span class="nav-label">Process Flow</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
         <!-- Main Content -->
         <main id="content" class="flex-1 overflow-auto">
             <div class="container py-6">
-                <h1 class="text-2xl font-bold mb-4">Welcome to Doodledog Studio.</h1>
+                <h1 class="text-2xl font-bold mb-4">Welcome to Doodledog Studio Dashboard</h1>
                 <!-- Carousel -->
                 <div id="projectCarousel" class="carousel slide mb-6" data-bs-ride="carousel">
                     <div class="carousel-inner">
@@ -331,7 +440,7 @@
                     <div class="col">
                         <div class="card h-100 shadow-sm">
                             <div class="card-body">
-                                <h5 class="card-title">Diagrams</h5>
+                                <h5 class="card-title">Diagram</h5>
                                 <p class="card-text">Create structured diagrams for processes or systems.</p>
                             </div>
                         </div>
@@ -370,6 +479,40 @@
                     </div>
                 </div>
 
+                <!-- Previous Open Projects Table -->
+                <h2>Previous Open Projects</h2>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Project Name</th>
+                                <th>Type</th>
+                                <th>Modified Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Workflow Process</td>
+                                <td>Flowchart</td>
+                                <td>2025-04-10</td>
+                                <td><button class="btn btn-primary btn-sm">Open</button></td>
+                            </tr>
+                            <tr>
+                                <td>Logo Design</td>
+                                <td>Vector</td>
+                                <td>2025-04-05</td>
+                                <td><button class="btn btn-primary btn-sm">Open</button></td>
+                            </tr>
+                            <tr>
+                                <td>Marketing Brochure</td>
+                                <td>Page Layout</td>
+                                <td>2025-03-30</td>
+                                <td><button class="btn btn-primary btn-sm">Open</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </main>
     </div>

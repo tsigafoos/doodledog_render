@@ -24,6 +24,11 @@ async def read_root(request: Request):
     # Pass the projects data to the template
     return templates.TemplateResponse("index.html", {"request": request, "projects": projects})
 
+@app.get("/dashboard/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    # Pass the projects data to the template
+    return templates.TemplateResponse("dashboard.html", {"request": request, "projects": projects})
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
