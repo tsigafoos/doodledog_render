@@ -1,16 +1,6 @@
 {
     "sqltools.connections": [
         {
-            "previewLimit": 50,
-            "server": "postgresql://twogooddogs:lTKCoPFz0bDhbI0OlKmCgIot0FjhMDNK@dpg-d01sbhje5dus73bhbpqg-a.virginia-postgres.render.com/doodledog_db",
-            "driver": "PostgreSQL",
-            "name": "doodledog",
-            "username": "twogooddogs",
-            "database": "doodledog_db",
-            "password": "lTKCoPFz0bDhbI0OlKmCgIot0FjhMDNK",
-            "connectString": "postgresql://twogooddogs:lTKCoPFz0bDhbI0OlKmCgIot0FjhMDNK@dpg-d01sbhje5dus73bhbpqg-a.virginia-postgres.render.com/doodledog_db"
-        },
-        {
             "pgOptions": {
                 "ssl": {
                     "rejectUnauthorized": true

@@ -3,18 +3,20 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from passlib.context import CryptContext
-from typing import Optional, Annotated
+from typing import Optional
 from sqlmodel import select, Session
-from database import create_db_and_tables, SessionDep, get_session
+from database import create_db_and_tables, SessionDep
 from models import User
 from pydantic import BaseModel, EmailStr, validator
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from fastapi.security import OAuth2PasswordBearer
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from dotenv import load_dotenv
 import secrets
+import os
 
+load_dotenv()
 app = FastAPI()
 
 # Mount static files directory for CSS/JS/images
@@ -27,16 +29,13 @@ templates = Jinja2Templates(directory="templates")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT configuration
-SECRET_KEY = secrets.token_urlsafe(32)  # Generate a secure key; store in .env
+SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_urlsafe(32)
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # Rate limiting
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
-
-# OAuth2 scheme for JWT
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login", auto_error=False)
 
 # Pydantic models for input validation
 class UserLogin(BaseModel):
@@ -80,23 +79,31 @@ def create_access_token(data: dict):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-# Dependency to get the current user from JWT
-async def get_current_user(session: SessionDep, token: Optional[str] = Depends(oauth2_scheme)):
+# Generate CSRF token
+def generate_csrf_token():
+    return secrets.token_urlsafe(32)
+
+# Dependency to get the current user from cookie
+async def get_current_user(request: Request, session: SessionDep):
+    print(f"Cookies: {request.cookies}")  # Debug print
+    token = request.cookies.get("access_token")
+    print(f"Raw token from cookie: {token}")  # Debug print
     if token is None:
         return None
+    if token.startswith("Bearer "):
+        token = token[len("Bearer "):]
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
+            print("No username in JWT payload")  # Debug print
             return None
-    except JWTError:
+    except JWTError as e:
+        print(f"JWT decode error: {str(e)}")  # Debug print
         return None
     user = session.exec(select(User).where(User.username == username)).first()
+    print(f"User from DB: {user.username if user else None}")  # Debug print
     return user
-
-# Generate CSRF token
-def generate_csrf_token():
-    return secrets.token_urlsafe(32)
 
 @app.get("/", response_class=HTMLResponse)
 @app.get("/home", response_class=HTMLResponse)
@@ -110,6 +117,7 @@ async def read_root(request: Request, user: Optional[User] = Depends(get_current
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, user: Optional[User] = Depends(get_current_user)):
+    print(f"Dashboard user: {user.username if user else None}")  # Debug print
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
     csrf_token = generate_csrf_token()
@@ -167,9 +175,9 @@ async def login(request: Request, session: SessionDep, username: str = Form(...)
 async def register_page(request: Request, user: Optional[User] = Depends(get_current_user)):
     if user:
         return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
-    csrf_token = generate_csrf_token()
+    csrf_token = request.cookies.get("csrf_token") or generate_csrf_token()
     response = templates.TemplateResponse("register.html", {"request": request, "csrf_token": csrf_token})
-    response.set_cookie(key="csrf_token", value=csrf_token, httponly=True, secure=True, samesite="strict")
+    response.set_cookie(key="csrf_token", value=csrf_token, httponly=True, secure=False, samesite="strict")
     return response
 
 @app.post("/register", response_class=HTMLResponse)
@@ -177,32 +185,43 @@ async def register_page(request: Request, user: Optional[User] = Depends(get_cur
 async def register(request: Request, session: SessionDep, username: str = Form(...), email: str = Form(...), password: str = Form(...), csrf_token: str = Form(...)):
     # Verify CSRF token
     stored_csrf_token = request.cookies.get("csrf_token")
+    print(f"Form CSRF token: {csrf_token}, Cookie CSRF token: {stored_csrf_token}")  # Debug print
     if not stored_csrf_token or stored_csrf_token != csrf_token:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid CSRF token")
 
     try:
         user_input = UserRegister(username=username, email=email, password=password)
     except ValueError as e:
+        print(f"Validation error: {str(e)}")  # Debug print
         return templates.TemplateResponse("register.html", {"request": request, "error": str(e), "csrf_token": generate_csrf_token()})
 
     # Check if username or email already exists
     existing_user = session.exec(select(User).where(User.username == user_input.username)).first()
     if existing_user:
+        print(f"Username {username} already exists")  # Debug print
         return templates.TemplateResponse("register.html", {"request": request, "error": "Username already exists", "csrf_token": generate_csrf_token()})
     
     existing_email = session.exec(select(User).where(User.email == user_input.email)).first()
     if existing_email:
+        print(f"Email {email} already exists")  # Debug print
         return templates.TemplateResponse("register.html", {"request": request, "error": "Email already exists", "csrf_token": generate_csrf_token()})
     
     # Hash the password and store the user
     hashed_password = pwd_context.hash(user_input.password)
     new_user = User(username=user_input.username, email=user_input.email, password=hashed_password, created_at=datetime.utcnow())
     session.add(new_user)
-    session.commit()
-    session.refresh(new_user)
+    try:
+        session.commit()
+        session.refresh(new_user)
+        print(f"User {new_user.username} saved successfully, ID: {new_user.id}")  # Debug print
+    except Exception as e:
+        session.rollback()
+        print(f"Database error: {str(e)}")  # Debug print
+        return templates.TemplateResponse("register.html", {"request": request, "error": "Failed to save user", "csrf_token": generate_csrf_token()})
     
     # Create JWT token
     access_token = create_access_token(data={"sub": new_user.username})
+    print(f"JWT token created: {access_token}")  # Debug print
     
     # Set secure cookie with JWT
     response = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
@@ -210,10 +229,11 @@ async def register(request: Request, session: SessionDep, username: str = Form(.
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
-        secure=True,
+        secure=False,  # Set to False for local testing
         samesite="strict",
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
+    print("Access token cookie set")  # Debug print
     return response
 
 @app.get("/logout", response_class=HTMLResponse)

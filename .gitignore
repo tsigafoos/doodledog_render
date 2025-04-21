@@ -1,10 +1,16 @@
-# Byte-compiled / optimized / DLL files
+/resources
+
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
-
-# C extensions
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
 *.so
+*$py.class
 
 # Distribution / packaging
 .Python
@@ -90,6 +96,11 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Spyder project settings
 .spyderproject
@@ -106,3 +117,36 @@ venv.bak/
 
 # Mac OS
 .DS_Store
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.log.*
+*.cache
+*.pid
+*.seed
+*.pid.lock
+*.bak
+*.swp
+*.swo
+
+# Database files (local testing)
+*.sqlite3
+*.db
+
+# Render-specific
+*.render.yaml
+render.yaml
+
+# Other
+/static/uploads/
+/tmp/
