@@ -252,6 +252,15 @@ async def drawing_page(request: Request, user: Optional[User] = Depends(get_curr
     response.set_cookie(key="csrf_token", value=csrf_token, httponly=True, secure=True, samesite="strict")
     return response
 
+@app.get("/vector", response_class=HTMLResponse)
+async def drawing_page(request: Request, user: Optional[User] = Depends(get_current_user)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    csrf_token = generate_csrf_token()
+    response = templates.TemplateResponse("svg.html", {"request": request, "user": user, "csrf_token": csrf_token})
+    response.set_cookie(key="csrf_token", value=csrf_token, httponly=True, secure=True, samesite="strict")
+    return response
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
