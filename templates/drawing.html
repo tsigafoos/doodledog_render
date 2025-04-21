@@ -1,0 +1,123 @@
+{% extends "base_authenticated.html" %}
+{% block title %}Drawing Module{% endblock %}
+{% block page_content %}
+<style>
+    #canvasWrapper {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+        background-color: #9f9f9f; /* 20% gray */
+    }
+    #canvasWrapper::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+    }
+    #drawingCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        background-color: #ffffff;
+        z-index: 10; /* Ensure drawing canvas is above wrapper */
+        touch-action: none; /* Prevent default touch scrolling */
+    }
+    #previewCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 20; /* Preview above drawing canvas */
+        pointer-events: none;
+    }
+    #cropModal.hidden {
+        pointer-events: none; /* Prevent modal from blocking events when hidden */
+    }
+</style>
+<div class="flex flex-col h-full">
+    <!-- Property Toolbar (Top) -->
+    <div class="bg-gray-700 text-white p-2 flex justify-between items-center">
+        <!-- Left-aligned controls -->
+        <div class="flex items-center space-x-4">
+            <input type="color" id="colorPicker" value="#000000" class="h-8 w-8" title="Stroke Color">
+            <input type="color" id="fillColorPicker" value="#ffffff" class="h-8 w-8" title="Fill Color">
+            <input type="range" id="strokeWidth" min="1" max="20" value="5" class="w-32">
+            <span id="strokeWidthValue" class="text-sm">5</span>
+        </div>
+        <!-- Right-aligned controls -->
+        <div class="flex items-center space-x-4">
+            <button id="undoButton" class="bg-gray-600 p-2 rounded hover:bg-gray-500" title="Undo">
+                <i class="bi bi-arrow-counterclockwise w-6 h-6"></i>
+            </button>
+            <button id="saveButton" class="bg-gray-600 p-2 rounded hover:bg-gray-500" title="Save Canvas">
+                <i class="bi bi-download w-6 h-6"></i>
+            </button>
+        </div>
+    </div>
+    <!-- Main Content -->
+    <div class="flex flex-1 overflow-hidden min-h-0">
+        <!-- Tool Selection Bar (Left) -->
+        <div class="bg-gray-700 w-16 flex flex-col items-center space-y-2 p-2">
+            <button id="brushTool" class="tool-btn p-2 bg-gray-600 rounded hover:bg-gray-500 text-white" data-tool="brush" title="Brush">
+                <i class="bi bi-brush w-6 h-6"></i>
+            </button>
+            <button id="eraserTool" class="tool-btn p-2 bg-gray-600 rounded hover:bg-gray-500 text-white" data-tool="eraser" title="Eraser">
+                <i class="bi bi-eraser w-6 h-6"></i>
+            </button>
+            <button id="fillTool" class="tool-btn p-2 bg-gray-600 rounded hover:bg-gray-500 text-white" data-tool="fill" title="Fill">
+                <i class="bi bi-paint-bucket w-6 h-6"></i>
+            </button>
+            <button id="rectTool" class="tool-btn p-2 bg-gray-600 rounded hover:bg-gray-500 text-white" data-tool="rectangle" title="Rectangle Outline">
+                <i class="bi bi-square w-6 h-6"></i>
+            </button>
+            <button id="filledRectTool" class="tool-btn p-2 bg-gray-600 rounded hover:bg-gray-500 text-white" data-tool="filled_rectangle" title="Filled Rectangle">
+                <i class="bi bi-square-fill w-6 h-6"></i>
+            </button>
+            <button id="circleTool" class="tool-btn p-2 bg-gray-600 rounded hover:bg-gray-500 text-white" data-tool="circle" title="Circle Outline">
+                <i class="bi bi-circle w-6 h-6"></i>
+            </button>
+            <button id="filledCircleTool" class="tool-btn p-2 bg-gray-600 rounded hover:bg-gray-500 text-white" data-tool="filled_circle" title="Filled Circle">
+                <i class="bi bi-circle-fill w-6 h-6"></i>
+            </button>
+            <button id="polygonTool" class="tool-btn p-2 bg-gray-600 rounded hover:bg-gray-500 text-white" data-tool="polygon" title="Polygon">
+                <i class="bi bi-pentagon w-6 h-6"></i>
+            </button>
+            <button id="grabTool" class="tool-btn p-2 bg-gray-600 rounded hover:bg-gray-500 text-white" data-tool="grab" title="Grab and Pan">
+                <i class="bi bi-arrows-move w-6 h-6"></i>
+            </button>
+            <button id="cropTool" class="tool-btn p-2 bg-gray-600 rounded hover:bg-gray-500 text-white" data-tool="crop" title="Crop Canvas">
+                <i class="bi bi-crop w-6 h-6"></i>
+            </button>
+        </div>
+        <!-- Canvas Container -->
+        <div class="flex-1 p-4 overflow-hidden relative" style="background-color: #9f9f9f;">
+            <div id="canvasWrapper" class="relative w-full h-full overflow-auto">
+                <canvas id="drawingCanvas" class="border border-gray-400 absolute top-0 left-0"></canvas>
+                <canvas id="previewCanvas" class="border border-gray-400 absolute top-0 left-0 pointer-events-none"></canvas>
+                <!-- Crop Confirmation Modal -->
+                <div id="cropModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div class="bg-white p-4 rounded-lg shadow-lg max-w-sm w-full">
+                        <p class="text-gray-800 mb-4">Apply crop?</p>
+                        <div class="flex justify-end space-x-2">
+                            <button id="cancelCrop" class="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
+                            <button id="confirmCrop" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Zoom Controls and Canvas Size Inputs (Bottom) -->
+    <div class="bg-gray-700 text-white p-2 flex justify-center items-center space-x-4 sticky bottom-0 z-10">
+        <button id="zoomOut" class="bg-gray-600 p-2 rounded hover:bg-gray-500">-</button>
+        <input type="range" id="zoomSlider" min="0.5" max="2" step="0.1" value="1" class="w-32">
+        <span id="zoomValue" class="text-sm">100%</span>
+        <button id="zoomIn" class="bg-gray-600 p-2 rounded hover:bg-gray-500">+</button>
+        <input type="number" id="canvasWidthInput" min="100" max="5000" class="bg-gray-600 text-white p-1 w-20 rounded" title="Canvas Width" placeholder="Width">
+        <input type="number" id="canvasHeightInput" min="100" max="5000" class="bg-gray-600 text-white p-1 w-20 rounded" title="Canvas Height" placeholder="Height">
+        <button id="updateCanvasSizeButton" class="bg-gray-600 p-2 rounded hover:bg-gray-500" title="Update Canvas Size">
+            <i class="bi bi-check-circle w-6 h-6"></i>
+        </button>
+    </div>
+</div>
+<script src="/static/js/drawing.js"></script>
+{% endblock %}

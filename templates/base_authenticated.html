@@ -47,9 +47,9 @@
             position: absolute; 
             top: 100%; 
             left: 0; 
-            width: 200px; /* Fixed width to prevent overlap */
+            width: 200px;
             background-color: #1f2937; 
-            z-index: 1001; /* Higher than nav bar */
+            z-index: 1001;
             border-radius: 0.375rem; 
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
         }
@@ -177,23 +177,23 @@
                         <i class="bi bi-chevron-down text-white toggle-icon"></i>
                     </div>
                     <div class="collapsible-content" id="modules-content">
-                        <button type="button" class="nav-item">
+                        <button type="button" class="nav-item" onclick="window.location.href='/diagram'">
                             <i class="bi bi-diagram-2 text-white"></i>
                             <span class="nav-label">Diagram</span>
                         </button>
-                        <button type="button" class="nav-item">
+                        <button type="button" class="nav-item" onclick="window.location.href='/flowchart'">
                             <i class="bi bi-bar-chart-steps text-white"></i>
                             <span class="nav-label">Flowchart</span>
                         </button>
-                        <button type="button" class="nav-item">
+                        <a href="/drawing" class="nav-item">
                             <i class="bi bi-image text-white"></i>
                             <span class="nav-label">Drawing</span>
-                        </button>
-                        <button type="button" class="nav-item">
+                        </a>
+                        <button type="button" class="nav-item" onclick="window.location.href='/vector'">
                             <i class="bi bi-vector-pen text-white"></i>
                             <span class="nav-label">Vector</span>
                         </button>
-                        <button type="button" class="nav-item">
+                        <button type="button" class="nav-item" onclick="window.location.href='/layout'">
                             <i class="bi bi-file-earmark-text text-white"></i>
                             <span class="nav-label">Page Layout</span>
                         </button>
@@ -249,7 +249,7 @@
                                     <i class="bi bi-file-earmark text-white"></i>
                                     <span class="nav-label">Workflow Map</span>
                                 </button>
-                                <button type="type" class="project-item">
+                                <button type="button" class="project-item">
                                     <i class="bi bi-file-earmark text-white"></i>
                                     <span class="nav-label">System Architecture</span>
                                 </button>
@@ -323,9 +323,9 @@
             });
         });
 
-        document.querySelectorAll('.nav-item, .folder-item, .project-item').forEach(button => {
+        document.querySelectorAll('.folder-item, .project-item').forEach(button => {
             button.addEventListener('click', () => {
-                console.log(`Clicked: ${button.querySelector('.nav-label, .folder-label')?.textContent || 'Icon'}`);
+                console.log(`Clicked: ${button.querySelector('.folder-label, .nav-label')?.textContent || 'Icon'}`);
             });
         });
 

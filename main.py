@@ -165,7 +165,7 @@ async def login(request: Request, session: SessionDep, username: str = Form(...)
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
-        secure=True,  # Requires HTTPS
+        secure=True,
         samesite="strict",
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
@@ -177,7 +177,7 @@ async def register_page(request: Request, user: Optional[User] = Depends(get_cur
         return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
     csrf_token = request.cookies.get("csrf_token") or generate_csrf_token()
     response = templates.TemplateResponse("register.html", {"request": request, "csrf_token": csrf_token})
-    response.set_cookie(key="csrf_token", value=csrf_token, httponly=True, secure=False, samesite="strict")
+    response.set_cookie(key="csrf_token", value=csrf_token, httponly=True, secure=True, samesite="strict")
     return response
 
 @app.post("/register", response_class=HTMLResponse)
@@ -229,7 +229,7 @@ async def register(request: Request, session: SessionDep, username: str = Form(.
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
-        secure=False,  # Set to False for local testing
+        secure=True,
         samesite="strict",
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
@@ -241,6 +241,15 @@ async def logout():
     response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie(key="access_token")
     response.delete_cookie(key="csrf_token")
+    return response
+
+@app.get("/drawing", response_class=HTMLResponse)
+async def drawing_page(request: Request, user: Optional[User] = Depends(get_current_user)):
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    csrf_token = generate_csrf_token()
+    response = templates.TemplateResponse("drawing.html", {"request": request, "user": user, "csrf_token": csrf_token})
+    response.set_cookie(key="csrf_token", value=csrf_token, httponly=True, secure=True, samesite="strict")
     return response
 
 if __name__ == "__main__":
