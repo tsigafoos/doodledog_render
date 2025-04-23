@@ -37,6 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let rectStart = null;
     let ellipseStart = null;
     let bezierClickCount = 0;
+    let isDraggingShape = false;
+    let dragStart = null;
 
     // Initialize SVG with a default layer
     const initSvg = () => {
@@ -146,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toggle fill color based on transparent checkbox
     transparent.addEventListener('change', () => {
         fillColor.disabled = transparent.checked;
-        if (activeElement && (activeElement.tagName === 'rect' || activeElement.tagName === 'ellipse')) {
+        if (activeElement && (activeElement.tagName === 'rect' || activeElement.tagName === 'ellipse' || (activeElement.tagName === 'path' && activeElement.getAttribute('d').endsWith('Z')))) {
             activeElement.setAttribute('fill', transparent.checked ? 'none' : fillColor.value);
             updateSvgCode();
         }
@@ -160,6 +162,10 @@ document.addEventListener('DOMContentLoaded', () => {
             updateBoundingBox();
             updateSvgCode();
             console.log('Active element stroke width updated:', strokeWidth.value);
+        } else if (isDrawing && currentTool === 'bezier' && currentPath) {
+            currentPath.setAttribute('stroke-width', strokeWidth.value);
+            updateSvgCode();
+            console.log('Drawing Bezier stroke width updated:', strokeWidth.value);
         }
     });
 
@@ -169,12 +175,16 @@ document.addEventListener('DOMContentLoaded', () => {
             activeElement.setAttribute('stroke', strokeColor.value);
             updateSvgCode();
             console.log('Active element stroke color updated:', strokeColor.value);
+        } else if (isDrawing && currentTool === 'bezier' && currentPath) {
+            currentPath.setAttribute('stroke', strokeColor.value);
+            updateSvgCode();
+            console.log('Drawing Bezier stroke color updated:', strokeColor.value);
         }
     });
 
     // Update fill color
     fillColor.addEventListener('input', () => {
-        if (activeElement && (activeElement.tagName === 'rect' || activeElement.tagName === 'ellipse') && !transparent.checked) {
+        if (activeElement && (activeElement.tagName === 'rect' || activeElement.tagName === 'ellipse' || (activeElement.tagName === 'path' && activeElement.getAttribute('d').endsWith('Z'))) && !transparent.checked) {
             activeElement.setAttribute('fill', fillColor.value);
             updateSvgCode();
             console.log('Active element fill color updated:', fillColor.value);
@@ -187,9 +197,22 @@ document.addEventListener('DOMContentLoaded', () => {
             currentTool = button.dataset.tool;
             toolButtons.forEach(btn => btn.classList.remove('bg-gray-500'));
             button.classList.add('bg-gray-500');
-            shapeProperties.classList.toggle('hidden', !['rectangle', 'ellipse'].includes(currentTool));
-            if (currentTool !== 'select') {
+            shapeProperties.classList.toggle('hidden', !['bezier', 'rectangle', 'ellipse', 'move', 'select'].includes(currentTool));
+            if (currentTool !== 'select' && currentTool !== 'move') {
                 selectElement(null);
+            }
+            if (currentTool === 'move') {
+                [fillColor, transparent, xInput, yInput, widthInput, heightInput].forEach(input => input.disabled = true);
+                strokeColor.disabled = false;
+                strokeWidth.disabled = false;
+            } else if (['bezier', 'rectangle', 'ellipse', 'select'].includes(currentTool)) {
+                [fillColor, transparent, xInput, yInput, widthInput, heightInput, strokeColor, strokeWidth].forEach(input => input.disabled = false);
+                if (currentTool === 'bezier') {
+                    xInput.disabled = true;
+                    yInput.disabled = true;
+                    widthInput.disabled = true;
+                    heightInput.disabled = true;
+            }
             }
             resetDrawingState();
             console.log('Tool selected:', currentTool);
@@ -217,7 +240,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         shapeProperties.classList.add('hidden');
 
-        // Reset input states
         [strokeColor, fillColor, transparent, strokeWidth, xInput, yInput, widthInput, heightInput].forEach(input => {
                 input.removeAttribute('disabled');
                 input.removeAttribute('readonly');
@@ -229,13 +251,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 strokeWidth.value = parseFloat(activeElement.getAttribute('stroke-width') || 5);
                 strokeWidthValue.textContent = strokeWidth.value;
 
-            if (activeElement.tagName === 'path') {
+            const isClosedBezier = activeElement.tagName === 'path' && activeElement.getAttribute('d').endsWith('Z') && activeElement.dataset.bezierPoints;
+
+            if (activeElement.tagName === 'path' && !isClosedBezier) {
                 [fillColor, transparent, xInput, yInput, widthInput, heightInput].forEach(input => input.disabled = true);
                 transparent.checked = false;
                 fillColor.disabled = true;
                 if (currentTool === 'select' && activeElement.dataset.bezierPoints) {
                     updateControlHandles();
                 }
+            } else if (activeElement.tagName === 'path' && isClosedBezier) {
+                const fill = activeElement.getAttribute('fill') || '#ffffff';
+                transparent.checked = fill === 'none';
+                fillColor.disabled = transparent.checked;
+                fillColor.value = fill !== 'none' ? fill : '#ffffff';
+                [xInput, yInput, widthInput, heightInput].forEach(input => input.disabled = true);
+                if (currentTool === 'select') {
+                    updateControlHandles();
+                }
+                console.log('Closed Bezier selected:', {
+                    fill: transparent.checked ? 'none' : fillColor.value,
+                    stroke: strokeColor.value,
+                    strokeWidth: strokeWidth.value
+                });
             } else if (activeElement.tagName === 'rect') {
                 const fill = activeElement.getAttribute('fill') || '#ffffff';
                 transparent.checked = fill === 'none';
@@ -278,9 +316,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
             updateBoundingBox();
-        } else if (['rectangle', 'ellipse'].includes(currentTool)) {
+        } else if (['bezier', 'rectangle', 'ellipse', 'move'].includes(currentTool)) {
             shapeProperties.classList.remove('hidden');
-            [fillColor, transparent, xInput, yInput, widthInput, heightInput].forEach(input => input.disabled = false);
+            if (currentTool === 'move') {
+                [fillColor, transparent, xInput, yInput, widthInput, heightInput].forEach(input => input.disabled = true);
+                strokeColor.disabled = false;
+                strokeWidth.disabled = false;
+            } else if (currentTool === 'bezier') {
+                [xInput, yInput, widthInput, heightInput].forEach(input => input.disabled = true);
+                [strokeColor, strokeWidth, fillColor, transparent].forEach(input => input.disabled = false);
+                fillColor.disabled = transparent.checked;
+            } else {
+                [fillColor, transparent, xInput, yInput, widthInput, heightInput, strokeColor, strokeWidth].forEach(input => input.disabled = false);
+                fillColor.disabled = transparent.checked;
+        }
         }
         updateSvgCode();
     };
@@ -384,16 +433,47 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Build Bezier path data
-    const buildBezierPathData = (points) => {
+    const buildBezierPathData = (points, isClosed = false) => {
         if (points.length < 1) return '';
         let d = `M${points[0].x},${points[0].y}`;
-        for (let i = 1; i < points.length - 2; i += 3) {
+        const lastIndex = isClosed ? points.length - 3 : points.length;
+        for (let i = 1; i < lastIndex - 2; i += 3) {
             if (points[i] && points[i + 1] && points[i + 2]) {
                     d += ` C${points[i].x},${points[i].y} ${points[i + 1].x},${points[i + 1].y} ${points[i + 2].x},${points[i + 2].y}`;
                 }
             }
-        console.log('Path data:', { d, pointsLength: points.length });
+        if (isClosed && points.length >= 4) {
+            const lastAnchor = points[points.length - 1];
+            const control2 = points[points.length - 2];
+            const control1 = points[points.length - 3];
+            d += ` C${control1.x},${control1.y} ${control2.x},${control2.y} ${points[0].x},${points[0].y} Z`;
+        }
+        console.log('Path data:', { d, pointsLength: points.length, isClosed });
         return d;
+    };
+
+    // Move penstroke path
+    const movePenstrokePath = (path, deltaX, deltaY) => {
+        let d = path.getAttribute('d');
+        if (!d) return;
+
+        const commands = d.match(/[ML][^ML]*/g) || [];
+        let newD = '';
+
+        commands.forEach(cmd => {
+            const type = cmd[0];
+            const coords = cmd.slice(1).split(/[\s,]+/).map(Number);
+            if (coords.length >= 2) {
+                const x = coords[0] + deltaX;
+                const y = coords[1] + deltaY;
+                newD += `${type}${x},${y} `;
+            }
+        });
+
+        if (newD) {
+            path.setAttribute('d', newD.trim());
+        }
+        console.log('Penstroke path moved:', { d, newD, deltaX, deltaY });
     };
 
     // Check if click is on the first anchor
@@ -441,24 +521,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const svgNS = 'http://www.w3.org/2000/svg';
         const newSvg = document.createElementNS(svgNS, 'svg');
         newSvg.setAttribute('width', '12cm');
-        newSvg.setAttribute('height', '6cm');
-        newSvg.setAttribute('viewBox', '0 0 1550 850');
+        newSvg.setAttribute('height', '12cm');
+        newSvg.setAttribute('viewBox', '0 0 2000 2000');
         newSvg.setAttribute('xmlns', svgNS);
         newSvg.setAttribute('version', '1.1');
 
         const title = document.createElementNS(svgNS, 'title');
         title.textContent = 'Multi-Segment Cubic Bezier Curve';
         newSvg.appendChild(title);
-
-        const rect = document.createElementNS(svgNS, 'rect');
-        rect.setAttribute('x', '1');
-        rect.setAttribute('y', '1');
-        rect.setAttribute('width', '1500');
-        rect.setAttribute('height', '800');
-        rect.setAttribute('fill', 'none');
-        rect.setAttribute('stroke', 'blue');
-        rect.setAttribute('stroke-width', '1');
-        newSvg.appendChild(rect);
 
         layers.forEach(layer => {
             const group = document.createElementNS(svgNS, 'g');
@@ -496,7 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<?xml version="1.0" standalone="no"?>\n${svgStr}`;
     };
 
-    // Update SVG code in textarea if open
+    // Update SVG code in textarea
     const updateSvgCode = () => {
         if (!codePanel.classList.contains('hidden')) {
             const rawSvgCode = generateSvgCode();
@@ -505,7 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Commit edited SVG code to canvas
+    // Commit edited SVG code
     const commitSvgCode = () => {
         try {
             const parser = new DOMParser();
@@ -537,6 +607,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         newShape.setAttribute('stroke-width', shape.getAttribute('stroke-width') || '5');
                         if (shape.tagName === 'path') {
                             newShape.setAttribute('d', shape.getAttribute('d') || '');
+                            if (shape.getAttribute('d').endsWith('Z')) {
+                                newShape.dataset.bezierPoints = JSON.stringify([]); // Placeholder, actual points need parsing
+                            }
                         } else if (shape.tagName === 'rect') {
                             newShape.setAttribute('x', shape.getAttribute('x') || '0');
                             newShape.setAttribute('y', shape.getAttribute('y') || '0');
@@ -578,10 +651,15 @@ document.addEventListener('DOMContentLoaded', () => {
         activeElement.setAttribute('stroke-width', strokeWidth.value || 5);
 
         if (activeElement.tagName === 'path') {
+            if (activeElement.getAttribute('d').endsWith('Z') && activeElement.dataset.bezierPoints) {
+                activeElement.setAttribute('fill', fill);
+                fillColor.disabled = transparent.checked;
+            }
             updateSvgCode();
             console.log('Path updated:', {
                 stroke: strokeColor.value,
-                strokeWidth: strokeWidth.value
+                strokeWidth: strokeWidth.value,
+                fill: activeElement.getAttribute('fill')
             });
         } else if (activeElement.tagName === 'rect') {
             const x = parseFloat(xInput.value) || 0;
@@ -660,6 +738,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            if (currentTool === 'move') {
+                if (target.tagName === 'path' || target.tagName === 'rect' || target.tagName === 'ellipse') {
+                    selectElement(target);
+                    isDraggingShape = true;
+                    dragStart = { x, y };
+                    console.log('Shape grabbed for moving:', { tag: target.tagName, x, y });
+                } else if (target === drawingSvg || target.tagName === 'g') {
+            selectElement(null);
+                }
+                return;
+            }
+
             selectElement(null);
 
             if (currentTool === 'pen') {
@@ -702,14 +792,28 @@ document.addEventListener('DOMContentLoaded', () => {
                         renderDottedLines();
                         console.log('Bezier second control:', { x, y });
                     } else if (bezierClickCount >= 4 && (isOnFirstAnchor(x, y) || isOnLastAnchor(x, y))) {
-                        pathData = buildBezierPathData(bezierPoints);
                         if (isOnFirstAnchor(x, y) && bezierClickCount >= 4) {
-                            pathData += ' Z';
-                            console.log('Bezier path closed on first anchor:', { x, y });
-                        } else {
-                            console.log('Bezier path finalized on last anchor:', { x, y });
+                            const lastAnchor = bezierPoints[bezierPoints.length - 1];
+                            const control2 = bezierPoints[bezierPoints.length - 2];
+                            const control1 = bezierPoints[bezierPoints.length - 3];
+                            bezierPoints.push({ type: 'control1', x: control2.x, y: control2.y });
+                            bezierPoints.push({ type: 'control2', x: control1.x, y: control1.y });
+                            pathData = buildBezierPathData(bezierPoints, true);
+                            currentPath.setAttribute('fill', transparent.checked ? 'none' : fillColor.value);
+                            console.log('Bezier path closed on first anchor:', { x, y, pathData });
+                        } else if (isOnLastAnchor(x, y) && bezierClickCount >= 4) {
+                            const lastAnchor = bezierPoints[bezierPoints.length - 1];
+                            const control2 = bezierPoints[bezierPoints.length - 2];
+                            const control1 = bezierPoints[bezierPoints.length - 3];
+                            bezierPoints.push({ type: 'anchor', x: lastAnchor.x, y: lastAnchor.y });
+                            bezierPoints.push({ type: 'control1', x: control2.x, y: control2.y });
+                            bezierPoints.push({ type: 'control2', x: control1.x, y: control1.y });
+                            pathData = buildBezierPathData(bezierPoints, true);
+                            currentPath.setAttribute('fill', transparent.checked ? 'none' : fillColor.value);
+                            console.log('Bezier path closed on last anchor:', { x, y, pathData });
                         }
                         currentPath.setAttribute('d', pathData);
+                        currentPath.dataset.bezierPoints = JSON.stringify(bezierPoints);
                         resetDrawingState();
                     } else if (bezierClickCount === 4) {
                     bezierPoints.push({ type: 'anchor', x, y });
@@ -796,27 +900,88 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Handle mouse move for preview
+    // Handle mouse move
     let lastUpdate = 0;
     const draw = (e) => {
         try {
-            if (!isDrawing && !isDraggingHandle) return;
+            if (!isDrawing && !isDraggingHandle && !isDraggingShape) return;
             e.preventDefault();
             const now = performance.now();
             if (now - lastUpdate < 16) return;
             lastUpdate = now;
 
             const { x, y } = getSvgCoords(e);
-            console.log('Mouse move:', { x, y, bezierClickCount, isDrawing });
+            console.log('Mouse move:', { x, y, bezierClickCount, isDrawing, isDraggingShape });
 
-            if (isDraggingHandle && activeElement && activeElement.tagName === 'path' && draggedHandleIndex !== null) {
+            if (isDraggingShape && activeElement && currentTool === 'move') {
+                const deltaX = x - dragStart.x;
+                const deltaY = y - dragStart.y;
+
+                if (activeElement.tagName === 'path') {
+                    if (activeElement.dataset.bezierPoints) {
                 const points = JSON.parse(activeElement.dataset.bezierPoints);
-                points[draggedHandleIndex].x = x;
-                points[draggedHandleIndex].y = y;
+                    points.forEach(point => {
+                        point.x += deltaX;
+                        point.y += deltaY;
+                    });
+                    activeElement.dataset.bezierPoints = JSON.stringify(points);
+                        activeElement.setAttribute('d', buildBezierPathData(points, activeElement.getAttribute('d').endsWith('Z')));
+                    } else {
+                        movePenstrokePath(activeElement, deltaX, deltaY);
+                    }
+                } else if (activeElement.tagName === 'rect') {
+                    const originalX = parseFloat(activeElement.getAttribute('x') || 0);
+                    const originalY = parseFloat(activeElement.getAttribute('y') || 0);
+                    activeElement.setAttribute('x', originalX + deltaX);
+                    activeElement.setAttribute('y', originalY + deltaY);
+                    xInput.value = originalX + deltaX;
+                    yInput.value = originalY + deltaY;
+                } else if (activeElement.tagName === 'ellipse') {
+                    const originalCx = parseFloat(activeElement.getAttribute('cx') || 0);
+                    const originalCy = parseFloat(activeElement.getAttribute('cy') || 0);
+                    activeElement.setAttribute('cx', originalCx + deltaX);
+                    activeElement.setAttribute('cy', originalCy + deltaY);
+                    const rx = parseFloat(activeElement.getAttribute('rx') || 50);
+                    const ry = parseFloat(activeElement.getAttribute('ry') || 50);
+                    xInput.value = (originalCx + deltaX) - rx;
+                    yInput.value = (originalCy + deltaY) - ry;
+                }
+
+                dragStart = { x, y };
+                updateBoundingBox();
+                updateSvgCode();
+                console.log('Dragging shape:', { tag: activeElement.tagName, deltaX, deltaY });
+            } else if (isDraggingHandle && activeElement && activeElement.tagName === 'path' && draggedHandleIndex !== null) {
+                const points = JSON.parse(activeElement.dataset.bezierPoints);
+                const draggedPoint = points[draggedHandleIndex];
+
+                if (draggedPoint.type === 'anchor') {
+                    const deltaX = x - draggedPoint.x;
+                    const deltaY = y - draggedPoint.y;
+
+                    draggedPoint.x = x;
+                    draggedPoint.y = y;
+
+                    if (draggedHandleIndex >= 3) {
+                        const prevControl2 = points[draggedHandleIndex - 1];
+                        prevControl2.x += deltaX;
+                        prevControl2.y += deltaY;
+                    }
+
+                    if (draggedHandleIndex + 1 < points.length) {
+                        const nextControl1 = points[draggedHandleIndex + 1];
+                        nextControl1.x += deltaX;
+                        nextControl1.y += deltaY;
+                    }
+                } else {
+                    draggedPoint.x = x;
+                    draggedPoint.y = y;
+                }
+
                 activeElement.dataset.bezierPoints = JSON.stringify(points);
-                activeElement.setAttribute('d', buildBezierPathData(points));
+                activeElement.setAttribute('d', buildBezierPathData(points, activeElement.getAttribute('d').endsWith('Z')));
                 updateControlHandles();
-                console.log('Dragging handle:', { index: draggedHandleIndex, x, y });
+                console.log('Dragging point:', { index: draggedHandleIndex, type: draggedPoint.type, x, y });
                 updateSvgCode();
             } else if (currentTool === 'pen' && isDrawing) {
                 pathData += ` L${x},${y}`;
@@ -863,7 +1028,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateSvgCode();
             } else if (currentTool === 'ellipse' && isDrawing) {
                 const width = Math.abs(x - ellipseStart.x);
-                const height = Math.abs(y - ellipseStart.y);
+                const height = Math.abs(y - rectStart.y);
                 const minX = Math.min(x, ellipseStart.x);
                 const minY = Math.min(y, ellipseStart.y);
                 const rx = width / 2;
@@ -910,6 +1075,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentPath = null;
                 ellipseStart = null;
                 updateSvgCode();
+            } else if (currentTool === 'move' && isDraggingShape) {
+                isDraggingShape = false;
+                dragStart = null;
+                updateBoundingBox();
+                updateSvgCode();
+                console.log('Shape dropped:', { tag: activeElement?.tagName, x, y });
             }
             isDraggingHandle = false;
             draggedHandleIndex = null;
@@ -984,7 +1155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     drawingSvg.addEventListener('pointerup', handlePointerUp);
     document.addEventListener('pointerup', handlePointerUp);
     drawingSvg.addEventListener('mouseleave', () => {
-        if (!isDrawing && !isDraggingHandle) {
+        if (!isDrawing && !isDraggingHandle && !isDraggingShape) {
             console.log('Mouseleave event');
         }
     });

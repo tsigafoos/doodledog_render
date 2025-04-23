@@ -45,22 +45,22 @@
         <div class="flex items-center space-x-4">
             <!-- Unified Shape Properties -->
             <div id="shapeProperties" class="flex items-center space-x-2 bg-gray-700 p-2 rounded hidden">
-                <label class="text-black text-sm">Stroke:</label>
+                <label class="text-white text-sm">Stroke:</label>
                 <input type="color" id="strokeColor" value="#ff0000" class="h-8 w-8" title="Stroke Color">
-                <label class="text-black text-sm">Fill:</label>
+                <label class="text-white text-sm">Fill:</label>
                 <input type="color" id="fillColor" value="#ffffff" class="h-8 w-8" title="Fill Color">
                 <input type="checkbox" id="transparent" class="ml-2">
-                <label for="transparent" class="text-black text-sm">Transparent</label>
-                <label class="text-black text-sm">Stroke Width:</label>
+                <label for="transparent" class="text-white text-sm">Transparent</label>
+                <label class="text-white text-sm">Stroke Width:</label>
                 <input type="range" id="strokeWidth" min="1" max="20" value="5" class="w-32">
-                <span id="strokeWidthValue" class="text-black text-sm">5</span>
-                <label class="text-black text-sm">X:</label>
+                <span id="strokeWidthValue" class="text-white text-sm">5</span>
+                <label class="text-white text-sm">X:</label>
                 <input type="number" id="x" class="w-16 p-1 border rounded bg-white text-black" value="0">
-                <label class="text-black text-sm">Y:</label>
+                <label class="text-white text-sm">Y:</label>
                 <input type="number" id="y" class="w-16 p-1 border rounded bg-white text-black" value="0">
-                <label class="text-black text-sm">Height:</label>
+                <label class="text-white text-sm">Height:</label>
                 <input type="number" id="height" class="w-16 p-1 border rounded bg-white text-black" value="100">
-                <label class="text-black text-sm">Width:</label>
+                <label class="text-white text-sm">Width:</label>
                 <input type="number" id="width" class="w-16 p-1 border rounded bg-white text-black" value="100">
                 <button id="updateShapeButton" class="bg-gray-600 p-2 rounded hover:bg-gray-500" title="Update Shape">
                     <i class="bi bi-check-lg w-6 h-6"></i>
@@ -81,6 +81,9 @@
     <div class="flex flex-1 overflow-hidden min-h-0">
         <!-- Tool Selection Bar (Left) -->
         <div class="bg-gray-700 w-16 flex flex-col items-center space-y-2 p-2">
+            <button id="moveTool" class="tool-btn p-2 bg-gray-600 rounded hover:bg-gray-500 text-white" data-tool="move" title="Move Shape">
+                <i class="bi bi-arrows-move w-6 h-6"></i>
+            </button>
             <button id="penTool" class="tool-btn p-2 bg-gray-600 rounded hover:bg-gray-500 text-white" data-tool="pen" title="Pen">
                 <i class="bi bi-pen w-6 h-6"></i>
             </button>
