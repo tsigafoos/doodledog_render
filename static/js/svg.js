@@ -32,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let isDraggingHandle = false;
     let draggedHandleIndex = null;
     let previewPath = null;
-    let firstAnchor = null;
     let layers = [{ id: 'layer1', element: null }];
     let currentLayerIndex = 0;
     let rectStart = null;
@@ -397,6 +396,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return d;
     };
 
+    // Check if click is on the first anchor
+    const isOnFirstAnchor = (x, y) => {
+        if (bezierPoints.length < 1) return false;
+        const firstAnchor = bezierPoints[0];
+        if (firstAnchor.type !== 'anchor') return false;
+        const dx = x - firstAnchor.x;
+        const dy = y - firstAnchor.y;
+        return Math.sqrt(dx * dx + dy * dy) < 5;
+    };
+
     // Check if click is on the last anchor
     const isOnLastAnchor = (x, y) => {
         if (bezierPoints.length < 1) return false;
@@ -477,40 +486,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     newShape.setAttribute('stroke', shape.getAttribute('stroke') || 'red');
                     newShape.setAttribute('stroke-width', shape.getAttribute('stroke-width') || '5');
                     group.appendChild(newShape);
-
-                    if (shape.tagName === 'path' && shape.dataset.bezierPoints) {
-                        const points = JSON.parse(shape.dataset.bezierPoints);
-                        const g = document.createElementNS(svgNS, 'g');
-                        points.forEach(point => {
-                            const element = document.createElementNS(svgNS, point.type === 'anchor' ? 'rect' : 'circle');
-                            if (point.type === 'anchor') {
-                                element.setAttribute('x', point.x - 5);
-                                element.setAttribute('y', point.y - 5);
-                                element.setAttribute('width', 10);
-                                element.setAttribute('height', 10);
-                            } else {
-                                element.setAttribute('cx', point.x);
-                                element.setAttribute('cy', point.y);
-                                element.setAttribute('r', 5);
                             }
-                            element.setAttribute('fill', '#888888');
-                            g.appendChild(element);
-                        });
-                        for (let i = 1; i < points.length; i++) {
-                            const line = document.createElementNS(svgNS, 'line');
-                            line.setAttribute('x1', points[i - 1].x);
-                            line.setAttribute('y1', points[i - 1].y);
-                            line.setAttribute('x2', points[i].x);
-                            line.setAttribute('y2', points[i].y);
-                                line.setAttribute('stroke', '#888888');
-                            line.setAttribute('stroke-width', 1);
-                            line.setAttribute('stroke-dasharray', '2,2');
-                            g.appendChild(line);
-                            }
-                        group.appendChild(g);
-                        }
                     }
-                }
             newSvg.appendChild(group);
         });
 
@@ -724,6 +701,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         renderPoints();
                         renderDottedLines();
                         console.log('Bezier second control:', { x, y });
+                    } else if (bezierClickCount >= 4 && (isOnFirstAnchor(x, y) || isOnLastAnchor(x, y))) {
+                        pathData = buildBezierPathData(bezierPoints);
+                        if (isOnFirstAnchor(x, y) && bezierClickCount >= 4) {
+                            pathData += ' Z';
+                            console.log('Bezier path closed on first anchor:', { x, y });
+                        } else {
+                            console.log('Bezier path finalized on last anchor:', { x, y });
+                        }
+                        currentPath.setAttribute('d', pathData);
+                        resetDrawingState();
                     } else if (bezierClickCount === 4) {
                     bezierPoints.push({ type: 'anchor', x, y });
                     pathData = buildBezierPathData(bezierPoints);
@@ -749,10 +736,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         renderDottedLines();
                         console.log('Bezier third anchor:', { x, y });
                     } else if (bezierClickCount >= 8) {
-                        if (isOnLastAnchor(x, y)) {
-                        resetDrawingState();
-                            console.log('Bezier path finalized');
-                        } else {
                             const mod = (bezierClickCount - 7) % 3;
                             if (mod === 1) {
                                 bezierPoints.push({ type: 'control1', x, y });
@@ -769,7 +752,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             renderPoints();
                             renderDottedLines();
                         }
-                    }
                     updateSvgCode();
                 }
             } else if (currentTool === 'rectangle') {
